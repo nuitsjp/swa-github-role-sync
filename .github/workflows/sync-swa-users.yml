@@ -27,14 +27,18 @@ jobs:
       
       # GitHub CLIをセットアップ
       - name: Setup GitHub CLI
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           # GitHub CLIは既にインストール済み
-          # トークンで認証
-          echo '${{ secrets.GH_PAT }}' | gh auth login --with-token
+          # 環境変数でトークン認証
+          gh auth status
         shell: pwsh
       
       # ユーザー同期スクリプトを実行
       - name: Sync Users
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           .\sync-swa-users.ps1 `
             -AppName "${{ secrets.SWA_APP_NAME }}" `
