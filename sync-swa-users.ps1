@@ -160,12 +160,19 @@ function Get-AzureStaticWebAppUsers {
         
         for ($i = 1; $i -le $retries; $i++) {
             try {
-                $result = az staticwebapp users list --name $AppName --resource-group $ResourceGroup --authentication-provider github 2>&1 | ConvertFrom-Json
+                $output = az staticwebapp users list --name $AppName --resource-group $ResourceGroup --authentication-provider github 2>&1
                 
                 if ($LASTEXITCODE -eq 0) {
-                    # authenticatedロールを持つユーザーを抽出
-                    $users = $result | Where-Object { $_.roles -contains "authenticated" } | Select-Object -ExpandProperty userId
-                    break
+                    # JSONパースを試行
+                    try {
+                        $result = $output | ConvertFrom-Json
+                        # authenticatedロールを持つユーザーを抽出
+                        $users = $result | Where-Object { $_.roles -contains "authenticated" } | Select-Object -ExpandProperty userId
+                        break
+                    }
+                    catch {
+                        throw "Azure APIレスポンスのJSON解析に失敗しました: $output"
+                    }
                 }
                 else {
                     if ($i -lt $retries) {
@@ -173,7 +180,7 @@ function Get-AzureStaticWebAppUsers {
                         Start-Sleep -Seconds 2
                     }
                     else {
-                        throw "Azure API呼び出しに失敗しました: $result"
+                        throw "Azure API呼び出しに失敗しました: $output"
                     }
                 }
             }
