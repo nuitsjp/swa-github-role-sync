@@ -36,13 +36,31 @@ Azure Static Web AppとGitHub Repositoryユーザーの同期サンプル
 
 ## ドキュメント
 
-詳細な使用方法、インストール手順、トラブルシューティングについては、[USAGE.md](USAGE.md)を参照してください。
+- **[USAGE.md](USAGE.md)** - 詳細な使用方法、インストール手順、トラブルシューティング
+- **[TEST_EXAMPLES.md](TEST_EXAMPLES.md)** - テスト実行例と検証方法
+- **[GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md)** - GitHub Actionsでの自動実行設定
 
 ## ファイル構成
 
-- `sync-swa-users.ps1` - メインスクリプト
+- `sync-swa-users.ps1` - メインスクリプト（GitHubとAzureのユーザー同期）
 - `USAGE.md` - 詳細な使用方法とドキュメント
+- `TEST_EXAMPLES.md` - テスト実行例
+- `GITHUB_ACTIONS_SETUP.md` - GitHub Actions設定ガイド
 - `.github/workflows/` - Azure Static Web Apps CI/CD設定
+
+## 主な特徴
+
+- ✅ GitHubリポジトリのpush権限を持つユーザーを自動検出
+- ✅ Azure Static Web Appと自動同期
+- ✅ ドライランモードで安全に事前確認
+- ✅ 詳細なログとエラーハンドリング
+- ✅ API呼び出しの自動リトライ機能
+- ✅ GitHub Actionsで定期実行可能
+
+## 必要な権限
+
+- **GitHub**: リポジトリの読み取り権限
+- **Azure**: Static Web Appの共同作成者ロール以上
 
 ## ライセンス
 
