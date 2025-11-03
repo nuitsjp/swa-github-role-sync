@@ -1,0 +1,48 @@
+name: Sync Azure SWA Users
+
+on:
+  # 毎日午前0時（UTC）に自動実行
+  schedule:
+    - cron: '0 0 * * *'
+  
+  # 手動実行も可能
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: windows-latest
+    
+    steps:
+      # リポジトリをチェックアウト
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      # Azure CLIでログイン
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      # GitHub CLIをセットアップ
+      - name: Setup GitHub CLI
+        run: |
+          # GitHub CLIは既にインストール済み
+          # トークンで認証
+          echo "${{ secrets.GH_PAT }}" | gh auth login --with-token
+      
+      # ユーザー同期スクリプトを実行
+      - name: Sync Users
+        run: |
+          .\sync-swa-users.ps1 `
+            -AppName "${{ secrets.SWA_APP_NAME }}" `
+            -ResourceGroup "${{ secrets.SWA_RESOURCE_GROUP }}" `
+            -GitHubRepo "${{ github.repository }}"
+        shell: pwsh
+      
+      # 失敗時の通知（オプション）
+      - name: Notify on failure
+        if: failure()
+        run: |
+          Write-Host "ユーザー同期に失敗しました" -ForegroundColor Red
+          # ここに通知処理を追加（例: Slackへの通知など）
+        shell: pwsh
