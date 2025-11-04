@@ -75,8 +75,36 @@ function New-AzureServicePrincipal {
                 Write-Log "削除完了" -Level SUCCESS
             }
             else {
-                Write-Log "既存のService Principalを使用します" -Level INFO
-                return $existingSp
+                Write-Log "既存のService Principalの資格情報を再生成します..." -Level INFO
+
+                $credentialResetOutput = az ad sp credential reset `
+                    --name $existingSp.appId `
+                    --credential-description "GitHubActions-$([Guid]::NewGuid().ToString())" `
+                    --years 1 `
+                    --output json 2>&1
+
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Service Principal の資格情報リセットに失敗しました: $credentialResetOutput"
+                }
+
+                $resetCredentials = $credentialResetOutput | ConvertFrom-Json
+
+                $credentialsJson = [pscustomobject]@{
+                    clientId = $resetCredentials.appId
+                    clientSecret = $resetCredentials.password
+                    subscriptionId = $SubscriptionId
+                    tenantId = $resetCredentials.tenant
+                    activeDirectoryEndpointUrl = "https://login.microsoftonline.com"
+                    resourceManagerEndpointUrl = "https://management.azure.com/"
+                    activeDirectoryGraphResourceId = "https://graph.windows.net/"
+                    sqlManagementEndpointUrl = "https://management.core.windows.net:8443/"
+                    galleryEndpointUrl = "https://gallery.azure.com/"
+                    managementEndpointUrl = "https://management.core.windows.net/"
+                }
+
+                Write-Log "資格情報を再生成しました" -Level SUCCESS
+                Write-Log "Client ID: $($credentialsJson.clientId)" -Level SUCCESS
+                return $credentialsJson
             }
         }
 
@@ -110,7 +138,7 @@ function New-AzureServicePrincipal {
                 }
             }
 
-            # JSONをパース（stdoutのみなので安全）
+            # JSONをパース
             $credentialsJson = $credentials | ConvertFrom-Json
         }
         finally {
