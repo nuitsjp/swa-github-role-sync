@@ -1,17 +1,12 @@
 {
   "routes": [
     {
-      "route": "/index.html",
-      "allowedRoles": ["github_collaborator"]
-    },
-    {
       "route": "/*",
-      "rewrite": "/index.html"
+      "allowedRoles": [
+        "github_collaborator"
+      ]
     }
   ],
-  "navigationFallback": {
-    "rewrite": "/index.html"
-  },
   "responseOverrides": {
     "401": {
       "redirect": "/.auth/login/github",
