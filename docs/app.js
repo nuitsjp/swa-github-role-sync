@@ -20,8 +20,8 @@ async function getUserInfo() {
 
         if (clientPrincipal) {
             // ユーザーがログインしている場合
-            const hasCollaboratorRole = clientPrincipal.userRoles.includes('github-collaborator');
-            const roleWarning = hasCollaboratorRole ? '' : '<p class="auth-warning">⚠️ github-collaboratorロールが付与されていません。ページをリロードしてください。</p>';
+            const hasCollaboratorRole = clientPrincipal.userRoles.includes('github_collaborator');
+            const roleWarning = hasCollaboratorRole ? '' : '<p class="auth-warning">⚠️ github_collaboratorロールが付与されていません。ページをリロードしてください。</p>';
             
             authStatusDiv.innerHTML = `
                 <p><strong>認証状態:</strong> <span class="user-info">ログイン済み</span></p>

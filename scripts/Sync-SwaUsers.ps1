@@ -127,8 +127,8 @@ function Get-AzureStaticWebAppUsers {
                     # JSONパースを試行
                     try {
                         $result = $output | ConvertFrom-Json
-                        # github-collaboratorロールを持つユーザーを抽出
-                        $users = $result | Where-Object { $_.roles -contains "github-collaborator" } | Select-Object -ExpandProperty userId
+                        # github_collaboratorロールを持つユーザーを抽出
+                        $users = $result | Where-Object { $_.roles -contains "github_collaborator" } | Select-Object -ExpandProperty userId
                         break
                     }
                     catch {
@@ -189,7 +189,7 @@ function Add-AzureStaticWebAppUser {
             --authentication-provider GitHub `
             --user-details $UserName `
             --domain $domain `
-            --role github-collaborator `
+            --role github_collaborator `
             --invitation-expiration-in-hours $InvitationExpiresInHours `
             2>&1
         
