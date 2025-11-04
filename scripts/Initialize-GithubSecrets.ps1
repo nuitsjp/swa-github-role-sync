@@ -5,6 +5,7 @@
 .DESCRIPTION
     Azure Service Principalを作成し、必要なシークレット（AZURE_CREDENTIALS、AZURE_STATIC_WEB_APP_NAME、
     AZURE_RESOURCE_GROUP）をGitHubリポジトリに自動的に登録します。
+    対象のGitHubリポジトリは、スクリプトを実行したGitリポジトリの`origin`リモートから自動検出されます。
 
     注意: このスクリプトを実行するには、GitHub Personal Access Tokenに以下の権限が必要です：
     - Classic token: 'repo' と 'workflow' スコープ
@@ -21,9 +22,6 @@
 .PARAMETER StaticWebAppName
     Azure Static Web App名
 
-.PARAMETER GitHubRepo
-    GitHubリポジトリ（形式: owner/repo）
-
 .PARAMETER GitHubToken
     GitHub Personal Access Token（repo権限が必要）。指定しない場合は対話的に入力を求められます。
 
@@ -33,14 +31,12 @@
 .EXAMPLE
     .\setup-github-secrets.ps1 -SubscriptionId "12345678-1234-1234-1234-123456789012" `
                                 -ResourceGroup "my-resource-group" `
-                                -StaticWebAppName "my-static-web-app" `
-                                -GitHubRepo "owner/repo"
+                                -StaticWebAppName "my-static-web-app"
 
 .EXAMPLE
     .\setup-github-secrets.ps1 -SubscriptionId "12345678-1234-1234-1234-123456789012" `
                                 -ResourceGroup "my-resource-group" `
                                 -StaticWebAppName "my-static-web-app" `
-                                -GitHubRepo "owner/repo" `
                                 -GitHubToken "ghp_xxxxxxxxxxxx"
 
 .NOTES
@@ -71,9 +67,6 @@ param(
     [string]$StaticWebAppName,
 
     [Parameter(Mandatory=$false)]
-    [string]$GitHubRepo,
-
-    [Parameter(Mandatory=$false)]
     [string]$GitHubToken,
 
     [Parameter(Mandatory=$false)]
@@ -95,12 +88,11 @@ function New-AzureServicePrincipal {
     param(
         [string]$Name,
         [string]$SubscriptionId,
-        [string]$ResourceGroup
-    )
+        [string]$ResourceGroup,
 
-    Write-Log "Azure Service Principalを作成中: $Name"
+        [Parameter(Mandatory=$false)]
+        [string]$StaticWebAppName,
 
-    try {
         # 既存のService Principalを確認
         $existingSp = az ad sp list --display-name $Name --query "[0]" 2>&1 | ConvertFrom-Json
 
@@ -292,7 +284,6 @@ try {
     if ($SubscriptionId) { $overrides.SubscriptionId = $SubscriptionId }
     if ($ResourceGroup) { $overrides.ResourceGroup = $ResourceGroup }
     if ($StaticWebAppName) { $overrides.StaticWebAppName = $StaticWebAppName }
-    if ($GitHubRepo) { $overrides.GitHubRepo = $GitHubRepo }
     if ($ServicePrincipalName) { $overrides.ServicePrincipalName = $ServicePrincipalName }
     
     $config = Get-Configuration -ConfigPath $ConfigPath -Overrides $overrides
@@ -301,8 +292,8 @@ try {
     $SubscriptionId = $config.Azure.SubscriptionId
     $ResourceGroup = $config.Azure.ResourceGroup
     $StaticWebAppName = $config.Azure.StaticWebAppName
-    $GitHubRepo = $config.GitHub.Repository
     $ServicePrincipalName = $config.ServicePrincipal.Name
+    $GitHubRepo = Get-GitHubRepositoryFromGit -StartPath $scriptDir
     
     Write-Log "========================================" -Level INFO
     Write-Log "GitHub Secretsセットアップスクリプト" -Level INFO
@@ -310,7 +301,7 @@ try {
     Write-Log "SubscriptionId: $SubscriptionId" -Level INFO
     Write-Log "ResourceGroup: $ResourceGroup" -Level INFO
     Write-Log "StaticWebAppName: $StaticWebAppName" -Level INFO
-    Write-Log "GitHubRepo: $GitHubRepo" -Level INFO
+    Write-Log "GitHubRepo: $GitHubRepo (detected from git)" -Level INFO
     Write-Log "ServicePrincipalName: $ServicePrincipalName" -Level INFO
     Write-Log "========================================" -Level INFO
 

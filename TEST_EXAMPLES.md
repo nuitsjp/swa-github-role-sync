@@ -28,10 +28,9 @@ gh auth status
 # パラメータを環境に合わせて変更してください
 $AppName = "your-static-web-app-name"
 $ResourceGroup = "your-resource-group"
-$GitHubRepo = "owner/repo"
 
 # ドライラン実行
-.\sync-swa-users.ps1 -AppName $AppName -ResourceGroup $ResourceGroup -GitHubRepo $GitHubRepo -DryRun
+.\sync-swa-users.ps1 -AppName $AppName -ResourceGroup $ResourceGroup -DryRun
 ```
 
 **期待される結果:**
@@ -66,7 +65,7 @@ Get-Help .\sync-swa-users.ps1 -Full
 
 ```powershell
 # 必ずドライランで確認してから実行してください
-.\sync-swa-users.ps1 -AppName $AppName -ResourceGroup $ResourceGroup -GitHubRepo $GitHubRepo
+.\sync-swa-users.ps1 -AppName $AppName -ResourceGroup $ResourceGroup
 ```
 
 **期待される結果:**
@@ -79,12 +78,19 @@ Get-Help .\sync-swa-users.ps1 -Full
 
 意図的に間違ったパラメータを指定して、エラーハンドリングを確認します。
 
+> ⚠️ 次の例では`origin`リモートを書き換えるため、必ず検証用クローンで実行し、最後に元のURLへ戻してください。
+
 ```powershell
 # 存在しないリポジトリを指定
-.\sync-swa-users.ps1 -AppName $AppName -ResourceGroup $ResourceGroup -GitHubRepo "nonexistent/repo" -DryRun
+# originリモートが誤っている場合の挙動を確認
+$originalRemote = git remote get-url origin
+git remote set-url origin git@github.com:nonexistent/repo.git
+./sync-swa-users.ps1 -AppName $AppName -ResourceGroup $ResourceGroup -DryRun
+# テスト後は必ず元のURLに戻してください
+git remote set-url origin $originalRemote
 
 # 存在しないStatic Web Appを指定
-.\sync-swa-users.ps1 -AppName "nonexistent-app" -ResourceGroup $ResourceGroup -GitHubRepo $GitHubRepo -DryRun
+.\sync-swa-users.ps1 -AppName "nonexistent-app" -ResourceGroup $ResourceGroup -DryRun
 ```
 
 **期待される結果:**
@@ -98,7 +104,7 @@ Get-Help .\sync-swa-users.ps1 -Full
 az logout
 
 # スクリプトを実行（認証エラーになるはず）
-.\sync-swa-users.ps1 -AppName $AppName -ResourceGroup $ResourceGroup -GitHubRepo $GitHubRepo -DryRun
+.\sync-swa-users.ps1 -AppName $AppName -ResourceGroup $ResourceGroup -DryRun
 
 # 再度ログイン
 az login
@@ -131,7 +137,7 @@ az login
 
 5. **「GitHubコラボレーターの取得に失敗しました」**
    - GitHubリポジトリへのアクセス権限を確認してください
-   - リポジトリ名が正しいか確認してください（形式: owner/repo）
+   - `git remote get-url origin` が正しいGitHubリポジトリを指しているか確認してください
 
 6. **「Azureユーザーの取得に失敗しました」**
    - Azure Static Web Appのリソース名とリソースグループ名が正しいか確認してください

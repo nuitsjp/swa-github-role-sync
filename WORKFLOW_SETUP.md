@@ -38,9 +38,12 @@
 .\setup-github-secrets.ps1 `
     -SubscriptionId "12345678-1234-1234-1234-123456789012" `
     -ResourceGroup "my-resource-group" `
-    -StaticWebAppName "my-static-web-app" `
-    -GitHubRepo "owner/repo"
+   -StaticWebAppName "my-static-web-app"
 ```
+
+GitHubリポジトリは、スクリプトを実行したGitリポジトリの`origin`リモートから自動的に判定されます。
+ワークフローを運用する前に、開発環境とGitHub上の両方で `git remote get-url origin` を確認し、想定しているリポジトリを指していることをチェックしてください。
+`origin`が未設定またはGitHub以外のリモートを指している場合、スクリプトは実行時に失敗します。
 
 このスクリプトは以下を自動的に実行します：
 1. Azure Service Principalの作成

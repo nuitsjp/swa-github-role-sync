@@ -5,6 +5,7 @@
 .DESCRIPTION
     GitHubリポジトリでpush権限を持つユーザーを取得し、Azure Static Web Appの認証済みユーザーと同期します。
     GitHubにあってAzureにないユーザーは追加し、Azureにのみ存在するユーザーは削除します。
+    対象となるGitHubリポジトリは、スクリプトを実行したGitリポジトリの`origin`リモートから自動検出されます。
 
 .PARAMETER AppName
     Azure Static Web App名
@@ -12,17 +13,14 @@
 .PARAMETER ResourceGroup
     Azureリソースグループ名
 
-.PARAMETER GitHubRepo
-    GitHubリポジトリ（形式: owner/repo）
-
 .PARAMETER DryRun
     変更を適用せずに実行結果をプレビューします
 
 .EXAMPLE
-    .\sync-swa-users.ps1 -AppName "my-static-web-app" -ResourceGroup "my-resource-group" -GitHubRepo "owner/repo"
+    .\sync-swa-users.ps1 -AppName "my-static-web-app" -ResourceGroup "my-resource-group"
 
 .EXAMPLE
-    .\sync-swa-users.ps1 -AppName "my-static-web-app" -ResourceGroup "my-resource-group" -GitHubRepo "owner/repo" -DryRun
+    .\sync-swa-users.ps1 -AppName "my-static-web-app" -ResourceGroup "my-resource-group" -DryRun
 
 .NOTES
     必要な権限:
@@ -41,9 +39,6 @@ param(
     
     [Parameter(Mandatory=$false)]
     [string]$ResourceGroup,
-    
-    [Parameter(Mandatory=$false)]
-    [string]$GitHubRepo,
     
     [Parameter(Mandatory=$false)]
     [string]$ConfigPath = "config.json",
@@ -253,21 +248,20 @@ try {
     $overrides = @{}
     if ($AppName) { $overrides.StaticWebAppName = $AppName }
     if ($ResourceGroup) { $overrides.ResourceGroup = $ResourceGroup }
-    if ($GitHubRepo) { $overrides.GitHubRepo = $GitHubRepo }
     
     $config = Get-Configuration -ConfigPath $ConfigPath -Overrides $overrides
     
     # 設定から値を取得
     $AppName = $config.Azure.StaticWebAppName
     $ResourceGroup = $config.Azure.ResourceGroup
-    $GitHubRepo = $config.GitHub.Repository
+    $GitHubRepo = Get-GitHubRepositoryFromGit -StartPath $scriptDir
     
     Write-Log "========================================" -Level INFO
     Write-Log "Azure Static Web App ユーザー同期スクリプト" -Level INFO
     Write-Log "========================================" -Level INFO
     Write-Log "AppName: $AppName" -Level INFO
     Write-Log "ResourceGroup: $ResourceGroup" -Level INFO
-    Write-Log "GitHubRepo: $GitHubRepo" -Level INFO
+    Write-Log "GitHubRepo: $GitHubRepo (detected from git)" -Level INFO
     if ($DryRun) {
         Write-Log "実行モード: ドライラン（変更は適用されません）" -Level WARNING
     }

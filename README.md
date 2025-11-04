@@ -13,6 +13,7 @@ Azure Static Web AppとGitHub Repositoryユーザーの同期サンプル
 - 新規ユーザーの自動招待と権限を失ったユーザーの自動削除
 - ドライランモードでの事前確認機能
 - 詳細なログ出力とエラーハンドリング
+- Gitの`origin`リモートから対象GitHubリポジトリを自動判定
 
 ## クイックスタート
 
@@ -25,13 +26,17 @@ Azure Static Web AppとGitHub Repositoryユーザーの同期サンプル
 ### 基本的な使い方
 
 ```powershell
-.\sync-swa-users.ps1 -AppName "your-app-name" -ResourceGroup "your-resource-group" -GitHubRepo "owner/repo"
+.\sync-swa-users.ps1 -AppName "your-app-name" -ResourceGroup "your-resource-group"
 ```
+
+GitHubリポジトリは現在のGitリポジトリの`origin`リモートから自動検出されます。
+リモートが正しいGitHubリポジトリを指していることを、`git remote get-url origin` で事前に確認してください。
+`origin`が存在しない、またはGitHubを指していない場合はスクリプトがエラーで停止します。
 
 ### ドライラン（変更を適用せずに確認）
 
 ```powershell
-.\sync-swa-users.ps1 -AppName "your-app-name" -ResourceGroup "your-resource-group" -GitHubRepo "owner/repo" -DryRun
+.\sync-swa-users.ps1 -AppName "your-app-name" -ResourceGroup "your-resource-group" -DryRun
 ```
 
 ## ドキュメント

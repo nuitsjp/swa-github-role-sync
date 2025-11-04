@@ -14,8 +14,9 @@
 #### ✅ 入力パラメータ
 - ✅ `AppName`: Azure Static Web App名
 - ✅ `ResourceGroup`: リソースグループ名
-- ✅ `GitHubRepo`: GitHubリポジトリ（形式: owner/repo）
 - ✅ `DryRun`: ドライラン実行オプション（追加機能）
+
+> GitHubリポジトリは、Gitの`origin`リモートから自動検出するように実装済み。
 
 #### ✅ 処理フロー
 1. ✅ GitHub APIでリポジトリのコラボレーター一覧を取得

@@ -7,7 +7,8 @@
 
 ## Build, Test, and Development Commands
 - Authenticate once per session with `az login` and `gh auth login` to unblock all CLI calls.
-- Run the sync end-to-end: `pwsh -File .\sync-swa-users.ps1 -AppName "your-app" -ResourceGroup "rg-name" -GitHubRepo "owner/repo"`.
+- Run the sync end-to-end: `pwsh -File .\sync-swa-users.ps1 -AppName "your-app" -ResourceGroup "rg-name"` (GitHubリポジトリはgitのoriginから検出)。
+- Double-check the active repository with `git remote get-url origin` before executing the scripts.
 - Validate planned changes safely with `pwsh -File .\sync-swa-users.ps1 ... -DryRun`, which skips mutations but surfaces discrepancies.
 - When adjusting automation, mirror the existing workflow structure and document triggers in `GITHUB_ACTIONS_SETUP.md`.
 

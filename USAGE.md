@@ -69,9 +69,6 @@ cp config.json.template config.json
     "resourceGroup": "my-resource-group",
     "staticWebAppName": "my-static-web-app"
   },
-  "github": {
-    "repository": "owner/repo"
-  },
   "servicePrincipal": {
     "name": "GitHub-Actions-SWA-Sync"
   },
@@ -88,9 +85,12 @@ cp config.json.template config.json
 | `azure.subscriptionId` | AzureサブスクリプションID | `12345678-1234-1234-1234-123456789012` |
 | `azure.resourceGroup` | Azureリソースグループ名 | `my-resource-group` |
 | `azure.staticWebAppName` | Azure Static Web App名 | `my-static-web-app` |
-| `github.repository` | GitHubリポジトリ（形式: owner/repo） | `nuitsjp/swa-github-auth-study` |
 | `servicePrincipal.name` | サービスプリンシパル名 | `GitHub-Actions-SWA-Sync` |
 | `invitationSettings.expiresInHours` | 招待の有効期限（時間） | `168`（7日間） |
+
+GitHubリポジトリは現在のGitリポジトリの`origin`リモートから自動的に検出されます。
+実行前に `git remote get-url origin` を実行し、想定しているGitHubリポジトリを指していることを確認してください。
+`origin`が見つからない、またはGitHubを指していない場合はエラーになります。
 
 **注意**: `config.json` は `.gitignore` に含まれており、Gitにコミットされません。
 
@@ -119,7 +119,7 @@ cp config.json.template config.json
 ### 基本的な使い方（設定ファイルなし）
 
 ```powershell
-.\scripts\sync-swa-users.ps1 -AppName "your-app-name" -ResourceGroup "your-resource-group" -GitHubRepo "owner/repo"
+.\scripts\sync-swa-users.ps1 -AppName "your-app-name" -ResourceGroup "your-resource-group"
 ```
 
 ### ドライランモード（変更を適用せずに確認）
@@ -134,7 +134,6 @@ cp config.json.template config.json
 |-----------|------|------|-----|
 | `AppName` | △ | Azure Static Web App名（設定ファイルから読み込み可能） | `my-static-web-app` |
 | `ResourceGroup` | △ | Azureリソースグループ名（設定ファイルから読み込み可能） | `my-resource-group` |
-| `GitHubRepo` | △ | GitHubリポジトリ（形式: owner/repo）（設定ファイルから読み込み可能） | `nuitsjp/swa-github-auth-study` |
 | `ConfigPath` | × | 設定ファイルのパス（デフォルト: `config.json`） | `custom-config.json` |
 | `DryRun` | × | 変更を適用せずに実行結果をプレビュー | （スイッチパラメータ） |
 
@@ -145,14 +144,14 @@ cp config.json.template config.json
 ### 例1: 初回同期
 
 ```powershell
-PS> .\sync-swa-users.ps1 -AppName "my-swa" -ResourceGroup "my-rg" -GitHubRepo "myorg/myrepo"
+PS> .\sync-swa-users.ps1 -AppName "my-swa" -ResourceGroup "my-rg"
 
 [2025-11-03 16:00:00] [INFO] ========================================
 [2025-11-03 16:00:00] [INFO] Azure Static Web App ユーザー同期スクリプト
 [2025-11-03 16:00:00] [INFO] ========================================
 [2025-11-03 16:00:00] [INFO] AppName: my-swa
 [2025-11-03 16:00:00] [INFO] ResourceGroup: my-rg
-[2025-11-03 16:00:00] [INFO] GitHubRepo: myorg/myrepo
+[2025-11-03 16:00:00] [INFO] GitHubRepo: myorg/myrepo (detected from git)
 [2025-11-03 16:00:00] [INFO] ========================================
 [2025-11-03 16:00:00] [INFO] 前提条件を確認中...
 [2025-11-03 16:00:01] [SUCCESS] Azure CLI: OK
@@ -189,7 +188,7 @@ PS> .\sync-swa-users.ps1 -AppName "my-swa" -ResourceGroup "my-rg" -GitHubRepo "m
 ### 例2: ドライラン
 
 ```powershell
-PS> .\sync-swa-users.ps1 -AppName "my-swa" -ResourceGroup "my-rg" -GitHubRepo "myorg/myrepo" -DryRun
+PS> .\sync-swa-users.ps1 -AppName "my-swa" -ResourceGroup "my-rg" -DryRun
 
 [2025-11-03 16:05:00] [INFO] ========================================
 [2025-11-03 16:05:00] [INFO] Azure Static Web App ユーザー同期スクリプト
@@ -209,7 +208,7 @@ PS> .\sync-swa-users.ps1 -AppName "my-swa" -ResourceGroup "my-rg" -GitHubRepo "m
 ### 例3: 変更なし
 
 ```powershell
-PS> .\sync-swa-users.ps1 -AppName "my-swa" -ResourceGroup "my-rg" -GitHubRepo "myorg/myrepo"
+PS> .\sync-swa-users.ps1 -AppName "my-swa" -ResourceGroup "my-rg"
 
 ...
 [2025-11-03 16:10:04] [INFO] 追加対象ユーザー数: 0
@@ -259,7 +258,7 @@ PS> .\sync-swa-users.ps1 -AppName "my-swa" -ResourceGroup "my-rg" -GitHubRepo "m
 権限の変更があった際に手動で実行：
 
 ```powershell
-.\sync-swa-users.ps1 -AppName "your-app-name" -ResourceGroup "your-resource-group" -GitHubRepo "owner/repo"
+.\sync-swa-users.ps1 -AppName "your-app-name" -ResourceGroup "your-resource-group"
 ```
 
 ### 定期実行（Windowsタスクスケジューラ）
@@ -277,7 +276,7 @@ PS> .\sync-swa-users.ps1 -AppName "my-swa" -ResourceGroup "my-rg" -GitHubRepo "m
    - プログラム/スクリプト: `powershell.exe`
    - 引数の追加:
      ```
-     -ExecutionPolicy Bypass -File "C:\path\to\sync-swa-users.ps1" -AppName "your-app-name" -ResourceGroup "your-resource-group" -GitHubRepo "owner/repo"
+  -ExecutionPolicy Bypass -File "C:\path\to\sync-swa-users.ps1" -AppName "your-app-name" -ResourceGroup "your-resource-group"
      ```
 
 6. タスクを保存
@@ -311,7 +310,7 @@ jobs:
       
       - name: Sync Users
         run: |
-          .\sync-swa-users.ps1 -AppName "${{ secrets.SWA_APP_NAME }}" -ResourceGroup "${{ secrets.SWA_RESOURCE_GROUP }}" -GitHubRepo "${{ github.repository }}"
+          .\sync-swa-users.ps1 -AppName "${{ secrets.SWA_APP_NAME }}" -ResourceGroup "${{ secrets.SWA_RESOURCE_GROUP }}"
 ```
 
 **必要なシークレット:**

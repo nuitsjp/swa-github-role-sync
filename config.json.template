@@ -4,9 +4,6 @@
     "resourceGroup": "your-resource-group",
     "staticWebAppName": "your-static-web-app-name"
   },
-  "github": {
-    "repository": "owner/repo"
-  },
   "servicePrincipal": {
     "name": "GitHub-Actions-SWA-Sync"
   },

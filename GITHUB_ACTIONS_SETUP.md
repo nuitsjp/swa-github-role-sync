@@ -46,9 +46,12 @@ jobs:
         run: |
           .\scripts\sync-swa-users.ps1 `
             -AppName "${{ secrets.SWA_APP_NAME }}" `
-            -ResourceGroup "${{ secrets.SWA_RESOURCE_GROUP }}" `
-            -GitHubRepo "${{ github.repository }}"
+            -ResourceGroup "${{ secrets.SWA_RESOURCE_GROUP }}"
         shell: pwsh
+
+リポジトリはジョブ内でチェックアウトされたGitリポジトリの`origin`リモート（つまり`${{ github.repository }}`）から自動的に解決されます。
+ローカル環境でも同様に `git remote get-url origin` を確認し、対象リポジトリが一致していることを必ずチェックしてください。
+`origin`が未設定だったりGitHub以外を指している場合、スクリプトは実行時にエラーで停止します。
       
       # 失敗時の通知（オプション）
       - name: Notify on failure
@@ -152,7 +155,6 @@ Azureリソースグループ名（例: `my-resource-group`）
           .\sync-swa-users.ps1 `
             -AppName "${{ secrets.SWA_APP_NAME }}" `
             -ResourceGroup "${{ secrets.SWA_RESOURCE_GROUP }}" `
-            -GitHubRepo "${{ github.repository }}" `
             -DryRun
         shell: pwsh
 ```

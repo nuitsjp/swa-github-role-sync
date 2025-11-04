@@ -37,7 +37,7 @@ function Get-Configuration {
     # 設定ファイルが存在しない場合
     if (-not (Test-Path $configFile)) {
         # オーバーライドがすべて提供されている場合は警告のみ
-        $requiredKeys = @("SubscriptionId", "ResourceGroup", "StaticWebAppName", "GitHubRepo")
+    $requiredKeys = @("SubscriptionId", "ResourceGroup", "StaticWebAppName")
         $allProvided = $requiredKeys | ForEach-Object { $Overrides.ContainsKey($_) } | Where-Object { $_ -eq $false } | Measure-Object | Select-Object -ExpandProperty Count
         
         if ($allProvided -eq 0) {
@@ -47,9 +47,6 @@ function Get-Configuration {
                     SubscriptionId = $Overrides.SubscriptionId
                     ResourceGroup = $Overrides.ResourceGroup
                     StaticWebAppName = $Overrides.StaticWebAppName
-                }
-                GitHub = @{
-                    Repository = $Overrides.GitHubRepo
                 }
                 ServicePrincipal = @{
                     Name = if ($Overrides.ContainsKey("ServicePrincipalName")) { $Overrides.ServicePrincipalName } else { "GitHub-Actions-SWA-Sync" }
@@ -67,6 +64,10 @@ function Get-Configuration {
     
     try {
         $config = Get-Content $configFile -Raw | ConvertFrom-Json
+
+        if ($config.PSObject.Properties.Name -contains "github") {
+            Write-Log "config.json 内の 'github' セクションは使用されなくなりました（gitのoriginから自動検出します）。" -Level WARNING
+        }
         
         # 設定をハッシュテーブルに変換
         $configHash = @{
@@ -74,9 +75,6 @@ function Get-Configuration {
                 SubscriptionId = $config.azure.subscriptionId
                 ResourceGroup = $config.azure.resourceGroup
                 StaticWebAppName = $config.azure.staticWebAppName
-            }
-            GitHub = @{
-                Repository = $config.github.repository
             }
             ServicePrincipal = @{
                 Name = $config.servicePrincipal.name
@@ -96,9 +94,6 @@ function Get-Configuration {
         if ($Overrides.ContainsKey("StaticWebAppName")) {
             $configHash.Azure.StaticWebAppName = $Overrides.StaticWebAppName
         }
-        if ($Overrides.ContainsKey("GitHubRepo")) {
-            $configHash.GitHub.Repository = $Overrides.GitHubRepo
-        }
         if ($Overrides.ContainsKey("ServicePrincipalName")) {
             $configHash.ServicePrincipal.Name = $Overrides.ServicePrincipalName
         }
@@ -111,6 +106,43 @@ function Get-Configuration {
     catch {
         Write-Log "設定ファイルの読み込みに失敗しました: $_" -Level ERROR
         throw
+    }
+}
+
+# GitリモートからGitHubリポジトリ (owner/repo) を解決
+function Get-GitHubRepositoryFromGit {
+    param(
+        [string]$StartPath
+    )
+
+    if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+        throw "git コマンドが見つかりません。Gitをインストールし、PATHに追加してください。"
+    }
+
+    try {
+        $basePath = if ($StartPath) { $StartPath } else { (Get-Location).Path }
+        $resolvedPath = (Resolve-Path -Path $basePath -ErrorAction Stop).Path
+
+        $gitRoot = (& git -C $resolvedPath rev-parse --show-toplevel 2>&1)
+        if ($LASTEXITCODE -ne 0) {
+            throw "Gitリポジトリを特定できませんでした。'git rev-parse --show-toplevel' の出力: $gitRoot"
+        }
+        $gitRoot = $gitRoot.Trim()
+
+        $remoteUrl = (& git -C $gitRoot remote get-url origin 2>&1)
+        if ($LASTEXITCODE -ne 0) {
+            throw "origin リモートの取得に失敗しました。'git remote get-url origin' の出力: $remoteUrl"
+        }
+        $remoteUrl = $remoteUrl.Trim()
+
+        if ($remoteUrl -match 'github\.com[:/](?<repo>[^/]+/[^/]+?)(?:\.git)?$') {
+            return $Matches.repo.Trim()
+        }
+
+        throw "origin リモートが GitHub リポジトリを指していません: $remoteUrl"
+    }
+    catch {
+        throw $_
     }
 }
 
@@ -161,18 +193,24 @@ function Test-Prerequisites {
     }
     
     # Azure認証状態の確認
-    $azAccount = az account show 2>&1
+    $azAccountOutput = az account show 2>&1
     if ($LASTEXITCODE -ne 0) {
         Write-Log "Azureにログインしていません。'az login' を実行してください" -Level ERROR
+        if ($azAccountOutput) {
+            Write-Log "詳細: $azAccountOutput" -Level ERROR
+        }
         return $false
     }
     Write-Log "Azure認証: OK" -Level SUCCESS
     
     if (-not $SkipGitHub) {
         # GitHub認証状態の確認
-        $ghAuth = gh auth status 2>&1
+        $ghAuthOutput = gh auth status 2>&1
         if ($LASTEXITCODE -ne 0) {
             Write-Log "GitHubにログインしていません。'gh auth login' を実行してください" -Level ERROR
+            if ($ghAuthOutput) {
+                Write-Log "詳細: $ghAuthOutput" -Level ERROR
+            }
             return $false
         }
         Write-Log "GitHub認証: OK" -Level SUCCESS
