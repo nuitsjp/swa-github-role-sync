@@ -1,7 +1,16 @@
 // Azure Static Web Apps 認証情報を取得して表示
 async function getUserInfo() {
     try {
-        const response = await fetch('/.auth/me');
+        // キャッシュバスティング用のタイムスタンプを追加
+        const timestamp = new Date().getTime();
+        const response = await fetch(`/.auth/me?_=${timestamp}`, {
+            cache: 'no-store',
+            headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        });
         const payload = await response.json();
         const { clientPrincipal } = payload;
 
@@ -11,12 +20,16 @@ async function getUserInfo() {
 
         if (clientPrincipal) {
             // ユーザーがログインしている場合
+            const hasCollaboratorRole = clientPrincipal.userRoles.includes('github-collaborator');
+            const roleWarning = hasCollaboratorRole ? '' : '<p class="auth-warning">⚠️ github-collaboratorロールが付与されていません。ページをリロードしてください。</p>';
+            
             authStatusDiv.innerHTML = `
                 <p><strong>認証状態:</strong> <span class="user-info">ログイン済み</span></p>
                 <p><strong>ユーザー名:</strong> ${clientPrincipal.userDetails}</p>
                 <p><strong>プロバイダー:</strong> ${clientPrincipal.identityProvider}</p>
                 <p><strong>ユーザーID:</strong> ${clientPrincipal.userId}</p>
                 <p><strong>ロール:</strong> ${clientPrincipal.userRoles.join(', ')}</p>
+                ${roleWarning}
             `;
 
             logoutBtn.style.display = 'inline-block';
