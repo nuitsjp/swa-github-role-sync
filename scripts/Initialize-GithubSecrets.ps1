@@ -91,8 +91,10 @@ function New-AzureServicePrincipal {
         [string]$ResourceGroup,
 
         [Parameter(Mandatory=$false)]
-        [string]$StaticWebAppName,
+        [string]$StaticWebAppName
+    )
 
+    try {
         # 既存のService Principalを確認
         $existingSp = az ad sp list --display-name $Name --query "[0]" 2>&1 | ConvertFrom-Json
 
@@ -162,7 +164,36 @@ function New-AzureServicePrincipal {
     }
 }
 
-# GitHub Personal Access Tokenの取得
+# GitHub認証の確認（gh CLIの認証状態をチェック）
+function Test-GitHubCLIAuth {
+    param([string]$Repo)
+
+    Write-Log "GitHub CLIの認証状態を確認中..."
+
+    try {
+        # gh CLIが認証済みか確認
+        $authStatus = gh auth status 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Log "GitHub CLI認証: OK" -Level SUCCESS
+            
+            # リポジトリへのアクセスをテスト
+            $result = gh api "repos/$Repo" 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-Log "リポジトリアクセス: OK" -Level SUCCESS
+                return $true
+            }
+        }
+        
+        Write-Log "GitHub CLIが認証されていないか、リポジトリにアクセスできません" -Level WARNING
+        return $false
+    }
+    catch {
+        Write-Log "GitHub CLI認証の確認に失敗しました: $_" -Level WARNING
+        return $false
+    }
+}
+
+# GitHub Personal Access Tokenの取得（フォールバック用）
 function Get-GitHubToken {
     param([string]$ProvidedToken)
 
@@ -195,8 +226,8 @@ function Get-GitHubToken {
     return $plainToken
 }
 
-# GitHub Tokenの検証
-function Test-GitHubToken {
+# GitHub Tokenの検証（明示的なトークンが提供された場合のみ使用）
+function Test-GitHubTokenAccess {
     param(
         [string]$Token,
         [string]$Repo
@@ -233,14 +264,16 @@ function Set-GitHubSecret {
         [string]$Repo,
         [string]$SecretName,
         [string]$SecretValue,
-        [string]$Token
+        [string]$Token = $null
     )
 
     Write-Log "GitHubシークレットを設定中: $SecretName"
 
     try {
-        # 一時的に環境変数を設定
-        $env:GH_TOKEN = $Token
+        # Tokenが提供されている場合のみ環境変数を設定
+        if ($Token) {
+            $env:GH_TOKEN = $Token
+        }
 
         # stderrを別ファイルにリダイレクトして詳細なエラー情報を取得
         $tempErrorFile = [System.IO.Path]::GetTempFileName()
@@ -273,7 +306,9 @@ function Set-GitHubSecret {
         return $false
     }
     finally {
-        Remove-Item Env:\GH_TOKEN -ErrorAction SilentlyContinue
+        if ($Token) {
+            Remove-Item Env:\GH_TOKEN -ErrorAction SilentlyContinue
+        }
     }
 }
 
@@ -340,12 +375,23 @@ try {
 
     Write-Log "========================================" -Level INFO
 
-    # 2. GitHub Tokenの取得と検証
-    $githubToken = Get-GitHubToken -ProvidedToken $GitHubToken
+    # 2. GitHub認証の確認と取得
+    $useExplicitToken = $false
+    $githubToken = $null
 
-    if (-not (Test-GitHubToken -Token $githubToken -Repo $GitHubRepo)) {
-        Write-Log "GitHub Tokenの検証に失敗しました" -Level ERROR
-        exit 1
+    # まずgh CLIの認証状態を確認
+    if (-not $GitHubToken -and (Test-GitHubCLIAuth -Repo $GitHubRepo)) {
+        Write-Log "GitHub CLIの既存認証を使用します" -Level SUCCESS
+    }
+    else {
+        # gh CLIが未認証の場合、またはトークンが明示的に提供された場合
+        $githubToken = Get-GitHubToken -ProvidedToken $GitHubToken
+        
+        if (-not (Test-GitHubTokenAccess -Token $githubToken -Repo $GitHubRepo)) {
+            Write-Log "GitHub Tokenの検証に失敗しました" -Level ERROR
+            exit 1
+        }
+        $useExplicitToken = $true
     }
 
     Write-Log "========================================" -Level INFO
