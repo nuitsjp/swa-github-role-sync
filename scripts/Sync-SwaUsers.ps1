@@ -189,7 +189,7 @@ function Add-AzureStaticWebAppUser {
             --authentication-provider GitHub `
             --user-details $UserName `
             --domain $domain `
-            --roles github-collaborator `
+            --role github-collaborator `
             --invitation-expiration-in-hours $InvitationExpiresInHours `
             2>&1
         
@@ -224,7 +224,7 @@ function Remove-AzureStaticWebAppUser {
             --name $AppName `
             --resource-group $ResourceGroup `
             --user-details $UserName `
-            --roles anonymous `
+            --role anonymous `
             2>&1
         
         if ($LASTEXITCODE -eq 0) {
