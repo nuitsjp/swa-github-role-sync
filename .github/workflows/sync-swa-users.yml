@@ -6,6 +6,8 @@ on:
       reason:
         description: 'Manual trigger context (optional)'
         required: false
+        default: ''
+        type: string
   schedule:
     - cron: '0 0 * * *'
 
