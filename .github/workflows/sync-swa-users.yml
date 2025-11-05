@@ -94,14 +94,10 @@ jobs:
           echo "Azure Static Web App ユーザーを取得中..."
           azure_raw="$(az staticwebapp users list --name "$STATIC_WEB_APP_NAME" --resource-group "$RESOURCE_GROUP" -o json)"
 
-          azure_map=()
-          azure_id_map=()
-          azure_display_map=()
-          azure_provider_map=()
-          declare -A azure_map
-          declare -A azure_id_map
-          declare -A azure_display_map
-          declare -A azure_provider_map
+          declare -A azure_map=()
+          declare -A azure_id_map=()
+          declare -A azure_display_map=()
+          declare -A azure_provider_map=()
 
           while IFS= read -r encoded; do
             [[ -z "$encoded" ]] && continue
