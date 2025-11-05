@@ -2,14 +2,6 @@ name: Sync Azure Static Web App Users
 
 on:
   workflow_dispatch:
-    inputs:
-      reason:
-        description: 'Manual trigger context (optional)'
-        required: false
-        default: ''
-        type: string
-  schedule:
-    - cron: '0 0 * * *'
 
 jobs:
   sync-users:
