@@ -31274,6 +31274,25 @@ async function listSwaUsers(name, resourceGroup) {
     coreExports.debug(`Fetched ${githubUsers.length} SWA GitHub users`);
     return githubUsers;
 }
+async function getSwaDefaultHostname(name, resourceGroup) {
+    const stdout = await runAzCommand([
+        'staticwebapp',
+        'show',
+        '--name',
+        name,
+        '--resource-group',
+        resourceGroup,
+        '--query',
+        'defaultHostname',
+        '--output',
+        'tsv'
+    ]);
+    const domain = stdout.trim();
+    if (!domain) {
+        throw new Error('Failed to resolve default hostname for Static Web App');
+    }
+    return domain;
+}
 async function inviteUser(name, resourceGroup, domain, githubUser, roles, expirationHours = 24) {
     const stdout = await runAzCommand([
         'staticwebapp',
@@ -32365,7 +32384,7 @@ function getInputs() {
         targetRepo: coreExports.getInput('target-repo'),
         swaName: coreExports.getInput('swa-name', { required: true }),
         swaResourceGroup: coreExports.getInput('swa-resource-group', { required: true }),
-        swaDomain: coreExports.getInput('swa-domain', { required: true }),
+        swaDomain: coreExports.getInput('swa-domain'),
         roleForAdmin: coreExports.getInput('role-for-admin') || 'github-admin',
         roleForWrite: coreExports.getInput('role-for-write') || 'github-writer',
         discussionCategoryName: coreExports.getInput('discussion-category-name', {
@@ -32387,6 +32406,9 @@ async function run() {
         const inputs = getInputs();
         const { owner, repo } = parseTargetRepo(inputs.targetRepo);
         const repoFullName = `${owner}/${repo}`;
+        const swaDomain = inputs.swaDomain ||
+            (await getSwaDefaultHostname(inputs.swaName, inputs.swaResourceGroup));
+        coreExports.info(`Using SWA domain: ${swaDomain}`);
         const octokit = githubExports.getOctokit(inputs.githubToken);
         const githubUsers = await listEligibleCollaborators(octokit, owner, repo);
         coreExports.info(`Found ${githubUsers.length} GitHub users with write/admin (owner/repo: ${repoFullName})`);
@@ -32397,7 +32419,7 @@ async function run() {
         const updated = [];
         const removed = [];
         for (const add of plan.toAdd) {
-            const inviteUrl = await inviteUser(inputs.swaName, inputs.swaResourceGroup, inputs.swaDomain, add.login, add.role);
+            const inviteUrl = await inviteUser(inputs.swaName, inputs.swaResourceGroup, swaDomain, add.login, add.role);
             added.push({ login: add.login, role: add.role, inviteUrl });
             coreExports.info(`Invited ${add.login} with role ${add.role}`);
         }

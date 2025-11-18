@@ -33,7 +33,7 @@ inputs:
     description:
       'Domain of the Static Web App (e.g. your-app.azurestaticapps.net). Used
       for invite links.'
-    required: true
+    required: false
 
   role-for-admin:
     description: 'SWA role name assigned to GitHub admin users.'

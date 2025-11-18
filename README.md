@@ -26,8 +26,9 @@ invite links to a new Discussion.
 - `github-token` (required): Token that can read collaborators and create
   Discussions (usually `${{ github.token }}`).
 - `target-repo`: `owner/repo`. Defaults to the current repository.
-- `swa-name` / `swa-resource-group` / `swa-domain` (required): Target Static Web
-  App info and domain used for invite links.
+- `swa-name` / `swa-resource-group` (required): Target Static Web App info.
+- `swa-domain` (optional): Domain used for invite links. Defaults to SWA
+  `defaultHostname` retrieved via `az staticwebapp show`.
 - `role-for-admin` (default `github-admin`): SWA role for GitHub admins.
 - `role-for-write` (default `github-writer`): SWA role for GitHub write/maintain
   users.
@@ -79,7 +80,6 @@ jobs:
           target-repo: ${{ github.repository }}
           swa-name: your-swa-name
           swa-resource-group: your-swa-resource-group
-          swa-domain: your-swa-name.azurestaticapps.net
           role-for-admin: github-admin
           role-for-write: github-writer
           discussion-category-name: 'Announcements'

@@ -33,6 +33,29 @@ export async function listSwaUsers(
   return githubUsers
 }
 
+export async function getSwaDefaultHostname(
+  name: string,
+  resourceGroup: string
+): Promise<string> {
+  const stdout = await runAzCommand([
+    'staticwebapp',
+    'show',
+    '--name',
+    name,
+    '--resource-group',
+    resourceGroup,
+    '--query',
+    'defaultHostname',
+    '--output',
+    'tsv'
+  ])
+  const domain = stdout.trim()
+  if (!domain) {
+    throw new Error('Failed to resolve default hostname for Static Web App')
+  }
+  return domain
+}
+
 export async function inviteUser(
   name: string,
   resourceGroup: string,

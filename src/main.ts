@@ -2,6 +2,7 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import {
   clearUserRoles,
+  getSwaDefaultHostname,
   inviteUser,
   listSwaUsers,
   updateUserRoles
@@ -20,7 +21,7 @@ type Inputs = {
   targetRepo?: string
   swaName: string
   swaResourceGroup: string
-  swaDomain: string
+  swaDomain?: string
   roleForAdmin: string
   roleForWrite: string
   discussionCategoryName: string
@@ -34,7 +35,7 @@ function getInputs(): Inputs {
     targetRepo: core.getInput('target-repo'),
     swaName: core.getInput('swa-name', { required: true }),
     swaResourceGroup: core.getInput('swa-resource-group', { required: true }),
-    swaDomain: core.getInput('swa-domain', { required: true }),
+    swaDomain: core.getInput('swa-domain'),
     roleForAdmin: core.getInput('role-for-admin') || 'github-admin',
     roleForWrite: core.getInput('role-for-write') || 'github-writer',
     discussionCategoryName: core.getInput('discussion-category-name', {
@@ -60,6 +61,11 @@ export async function run(): Promise<void> {
     const inputs = getInputs()
     const { owner, repo } = parseTargetRepo(inputs.targetRepo)
     const repoFullName = `${owner}/${repo}`
+
+    const swaDomain =
+      inputs.swaDomain ||
+      (await getSwaDefaultHostname(inputs.swaName, inputs.swaResourceGroup))
+    core.info(`Using SWA domain: ${swaDomain}`)
 
     const octokit = github.getOctokit(inputs.githubToken)
     const githubUsers = await listEligibleCollaborators(octokit, owner, repo)
@@ -88,7 +94,7 @@ export async function run(): Promise<void> {
       const inviteUrl = await inviteUser(
         inputs.swaName,
         inputs.swaResourceGroup,
-        inputs.swaDomain,
+        swaDomain,
         add.login,
         add.role
       )
