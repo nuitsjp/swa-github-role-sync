@@ -1,0 +1,80 @@
+name: Sync SWA roles with GitHub repo permissions
+description: >
+  Sync Azure Static Web Apps roles with users who have write/admin access to a
+  GitHub repository, and post invite links to a new Discussion.
+author: Atsushi Nakamura
+# Add your action's branding here. This will appear on the GitHub Marketplace.
+branding:
+  icon: users
+  color: blue
+
+inputs:
+  github-token:
+    description:
+      'GitHub token with permissions to read collaborators and create
+      discussions.'
+    required: true
+
+  target-repo:
+    description:
+      'Target repository in owner/repo format. Defaults to the current
+      repository.'
+    required: false
+
+  swa-name:
+    description: 'Name of the target Azure Static Web App.'
+    required: true
+
+  swa-resource-group:
+    description: 'Resource group name of the Static Web App.'
+    required: true
+
+  swa-domain:
+    description:
+      'Domain of the Static Web App (e.g. your-app.azurestaticapps.net). Used
+      for invite links.'
+    required: true
+
+  role-for-admin:
+    description: 'SWA role name assigned to GitHub admin users.'
+    required: false
+    default: github-admin
+
+  role-for-write:
+    description: 'SWA role name assigned to GitHub write/maintain users.'
+    required: false
+    default: github-writer
+
+  discussion-category-name:
+    description:
+      'Discussion category name where invite summary Discussion will be created.'
+    required: true
+
+  discussion-title-template:
+    description:
+      'Template for discussion title. Placeholders: {swaName}, {repo}, {date}.'
+    required: false
+    default: SWA access invites for {swaName} ({repo}) - {date}
+
+  discussion-body-template:
+    description: |
+      Template for discussion body. Placeholders: {swaName}, {repo}, {summaryMarkdown}.
+    required: false
+    default: |
+      This discussion contains SWA access invite links for **{swaName}** from **{repo}**.
+
+      {summaryMarkdown}
+
+runs:
+  using: node20
+  main: dist/index.js
+
+outputs:
+  added-count:
+    description: Number of users newly invited on SWA.
+  updated-count:
+    description: Number of users whose SWA roles were updated.
+  removed-count:
+    description: Number of users removed from SWA roles.
+  discussion-url:
+    description: URL of the created Discussion containing invite links.
