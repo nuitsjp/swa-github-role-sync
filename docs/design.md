@@ -421,7 +421,8 @@ jobs:
           discussion-title-template:
             'SWA access invites for {swaName} ({repo}) - {date}'
           discussion-body-template: |
-            This discussion contains SWA access invite links for **{swaName}** from **{repo}**.
+            This discussion contains SWA access invite links for **{swaName}**
+            from **{repo}**.
 
             {summaryMarkdown}
 ```
