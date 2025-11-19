@@ -128,7 +128,9 @@ describe('azure helpers', () => {
     const { getSwaDefaultHostname } = await loadAzure()
     const promise = getSwaDefaultHostname('app', 'rg')
     await expect(promise).rejects.toThrow(/AuthorizationFailed: access denied/)
-    await expect(promise).rejects.toThrow(/Command failed: az staticwebapp show/)
+    await expect(promise).rejects.toThrow(
+      /Command failed: az staticwebapp show/
+    )
   })
 
   it('keeps original error message when stderr output is empty', async () => {
@@ -144,10 +146,7 @@ describe('azure helpers', () => {
   it('does not duplicate stderr content when already present in message', async () => {
     expect.assertions(2)
     const stderr = 'AuthorizationFailed: repeating details'
-    mockExecErrorOnce(
-      `Command failed: az staticwebapp show\n${stderr}`,
-      stderr
-    )
+    mockExecErrorOnce(`Command failed: az staticwebapp show\n${stderr}`, stderr)
 
     const { getSwaDefaultHostname } = await loadAzure()
     await getSwaDefaultHostname('app', 'rg').catch((error) => {

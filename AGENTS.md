@@ -5,7 +5,9 @@
 - Think in English, interact with the user in Japanese.
 - Can execute GitHub CLI/Azure CLI. Will execute and verify them personally
   whenever possible.
-- When modifying the implementation, strictly adhere to the t-wada style of Test-Driven Development (TDD). RED-GREEN-REFACTOR cycle must be followed without exception.
+- When modifying the implementation, strictly adhere to the t-wada style of
+  Test-Driven Development (TDD). RED-GREEN-REFACTOR cycle must be followed
+  without exception.
 
 ## Project Structure & Module Organization
 
@@ -40,7 +42,8 @@
 - Keep action inputs/outputs mirrored between `action.yml` and `src/types.ts`.
 - Prettier handles formatting (2-space indent, single quotes per config); run
   before committing or rely on `npm run bundle`.
-- 日本語ドキュメントでは和文と英単語の間にスペースを入れない（例: `SWA任意ロール`）。
+- 日本語ドキュメントでは和文と英単語の間にスペースを入れない（例:
+  `SWA任意ロール`）。
 
 ## Testing Guidelines
 
