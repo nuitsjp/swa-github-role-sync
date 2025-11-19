@@ -20,6 +20,7 @@ jobs:
 
           owner="${GITHUB_REPOSITORY%/*}"
           name="${GITHUB_REPOSITORY#*/}"
+          MAX_RETRIES=5
 
           query=$(cat <<'GRAPHQL'
           query ($owner: String!, $name: String!, $cursor: String) {
@@ -50,14 +51,57 @@ jobs:
           GRAPHQL
           )
 
+          fetch_page() {
+            local cursor_value="$1"
+            local page
+            local attempt=1
+            while [ "$attempt" -le "$MAX_RETRIES" ]; do
+              if [ -z "$cursor_value" ]; then
+                if page=$(gh api graphql -F owner="$owner" -F name="$name" -f query="$query"); then
+                  echo "$page"
+                  return 0
+                fi
+              else
+                if page=$(gh api graphql -F owner="$owner" -F name="$name" -F cursor="$cursor_value" -f query="$query"); then
+                  echo "$page"
+                  return 0
+                fi
+              fi
+              echo "Failed to fetch discussions (attempt $attempt/$MAX_RETRIES); retrying..." >&2
+              sleep $((attempt * 2))
+              attempt=$((attempt + 1))
+            done
+            echo "Failed to fetch discussions after $MAX_RETRIES attempts." >&2
+            return 1
+          }
+
+          delete_with_retry() {
+            local id="$1"
+            local number="$2"
+            local title="$3"
+            local url="$4"
+            local attempt=1
+
+            while [ "$attempt" -le "$MAX_RETRIES" ]; do
+              if gh api graphql -F id="$id" -f query="$mutation" >/dev/null; then
+                printf 'Deleted Discussion #%s "%s" (%s)\n' "$number" "$title" "$url"
+                return 0
+              fi
+              echo "Failed to delete Discussion #$number (attempt $attempt/$MAX_RETRIES); retrying..." >&2
+              sleep $((attempt * 2))
+              attempt=$((attempt + 1))
+            done
+
+            echo "Giving up on Discussion #$number after $MAX_RETRIES attempts." >&2
+            return 1
+          }
+
           deleted=0
           cursor=""
 
           while :; do
-            if [ -z "$cursor" ]; then
-              response=$(gh api graphql -F owner="$owner" -F name="$name" -f query="$query")
-            else
-              response=$(gh api graphql -F owner="$owner" -F name="$name" -F cursor="$cursor" -f query="$query")
+            if ! response=$(fetch_page "$cursor"); then
+              exit 1
             fi
 
             count=$(echo "$response" | jq '.data.repository.discussions.nodes | length')
@@ -73,8 +117,7 @@ jobs:
               title=$(echo "$node" | jq -r '.title')
               url=$(echo "$node" | jq -r '.url')
 
-              gh api graphql -F id="$id" -f query="$mutation" >/dev/null
-              printf 'Deleted Discussion #%s "%s" (%s)\n' "$number" "$title" "$url"
+              delete_with_retry "$id" "$number" "$title" "$url"
               deleted=$((deleted + 1))
             done < <(echo "$response" | jq -c '.data.repository.discussions.nodes[]')
 
