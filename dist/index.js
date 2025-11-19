@@ -31273,6 +31273,11 @@ async function listSwaUsers(name, resourceGroup) {
         'json'
     ]);
     const users = JSON.parse(stdout);
+    coreExports.info(`Azure CLI returned ${users.length} SWA users: ${users.length
+        ? users
+            .map((user) => `${user.userDetails ?? 'unknown'}/${user.provider ?? 'unknown'}`)
+            .join(', ')
+        : 'none'}`);
     const githubUsers = users.filter((user) => Boolean(user.userDetails?.trim()) &&
         normalizeProvider(user.provider) === 'github');
     coreExports.debug(`Fetched ${githubUsers.length} SWA GitHub users`);
