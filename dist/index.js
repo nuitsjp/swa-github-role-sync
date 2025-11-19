@@ -31257,6 +31257,9 @@ async function runAzCommand(args) {
     });
     return stdout;
 }
+function normalizeProvider(provider) {
+    return provider ? provider.trim().toLowerCase() : '';
+}
 async function listSwaUsers(name, resourceGroup) {
     const stdout = await runAzCommand([
         'staticwebapp',
@@ -31270,7 +31273,8 @@ async function listSwaUsers(name, resourceGroup) {
         'json'
     ]);
     const users = JSON.parse(stdout);
-    const githubUsers = users.filter((user) => user.provider?.toLowerCase() === 'github');
+    const githubUsers = users.filter((user) => Boolean(user.userDetails?.trim()) &&
+        normalizeProvider(user.provider) === 'github');
     coreExports.debug(`Fetched ${githubUsers.length} SWA GitHub users`);
     return githubUsers;
 }
