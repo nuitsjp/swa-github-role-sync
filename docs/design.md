@@ -476,7 +476,7 @@ Action のリポジトリ自体にも普通に Workflow を定義できるので
   1. `v1` タグを同じコミットに付け替える
 
 - Marketplace 公開：
-  - Repo を Public にしたうえで、GitHub の Marketpace 公開フローに従う（カテゴリ・branding 等を設定）
+  - Repository を Public にしたうえで、GitHub の Marketpace 公開フローに従う（カテゴリ・branding 等を設定）
 
 ---
 

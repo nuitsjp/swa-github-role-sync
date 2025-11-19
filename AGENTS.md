@@ -32,7 +32,7 @@
 
 - TypeScript, ES modules, strict typing favored; prefer `async/await` over raw
   promises.
-- File names are kebab/flat case (`azure.ts`, `github.ts`); exported
+- Filenames are kebab/flat case (`azure.ts`, `github.ts`); exported
   classes/types PascalCase, functions/variables camelCase.
 - Keep action inputs/outputs mirrored between `action.yml` and `src/types.ts`.
 - Prettier handles formatting (2-space indent, single quotes per config); run
