@@ -9,6 +9,7 @@ on:
       - main
   schedule:
     - cron: '31 7 * * 3'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -152,6 +153,8 @@ jobs:
     name: Check Licenses
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -174,6 +177,19 @@ jobs:
         with:
           version: 4.x
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - if: ${{ github.event_name == 'workflow_dispatch' }}
+        name: Update Licenses
+        run: licensed cache
+
+      - if: ${{ github.event_name == 'workflow_dispatch' }}
+        name: Commit Licenses
+        run: |
+          git config --local user.email "licensed-ci@users.noreply.github.com"
+          git config --local user.name "licensed-ci"
+          git add .
+          git commit -m "Auto-update license files"
+          git push
 
       - name: Check Licenses
         run: licensed status
