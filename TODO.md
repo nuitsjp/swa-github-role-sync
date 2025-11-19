@@ -2,10 +2,6 @@
 
 1. 実環境でのE2E検証 ... done
 2. 失敗時のハンドリング/ログ強化
-
-- Azure CLI失敗やDiscussion作成失敗時は全体をエラーとなるようにする
-- core.summaryには成功/失敗の詳細が出力されていなければ追加する
-
 3. テスト拡充
 
 - `src/main.ts`のE2Eに近いユニット/統合テストを追加（OctokitとAzure
