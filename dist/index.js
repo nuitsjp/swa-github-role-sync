@@ -31270,7 +31270,7 @@ async function listSwaUsers(name, resourceGroup) {
         'json'
     ]);
     const users = JSON.parse(stdout);
-    const githubUsers = users.filter((user) => user.provider === 'GitHub');
+    const githubUsers = users.filter((user) => user.provider?.toLowerCase() === 'github');
     coreExports.debug(`Fetched ${githubUsers.length} SWA GitHub users`);
     return githubUsers;
 }
