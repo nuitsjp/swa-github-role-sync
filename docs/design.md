@@ -22,7 +22,8 @@ Action の実装は以下を前提とします。
 
 - TypeScript 製の JavaScript Action（Node20 ランタイム）
 - GitHub 公式の `actions/typescript-action` テンプレートをベースにする
-  - コンパイル・テスト・lint・`check-dist`・CodeQL などが同梱されている
+  - コンパイル・テスト・lint・CodeQL に加え、`dist/` 差分チェックを行う CI
+    ワークフロー（Verify）を自前で整備する
 - リポジトリは **1 リポジトリ = 1 アクション**（`swa-github-role-sync`）とする
 - Azure への認証は `azure/login` + OIDC によって
   **workflow 側で行い**、Action 本体は Azure クレデンシャルの値を扱わない
@@ -112,7 +113,7 @@ permissions:
 - TypeScript ビルド設定 (`tsconfig`)
 - テスト（Jest）
 - Lint（ESLint）
-- `check-dist` 用 workflow
+- dist 差分検証を行う Verify workflow
 - CodeQL 分析
 - リリース・バージョニングのガイド
 
@@ -121,7 +122,7 @@ permissions:
 - `action.yml`
 - `src/main.ts`（エントリポイント）
 - `dist/index.js`（ビルド成果物：`ncc` 等でバンドルされた JS）
-- `.github/workflows/ci.yml`（lint / test / build / check-dist）
+- `.github/workflows/ci.yml`（format / lint / test / bundle / dist 差分 / npm audit）
 - `.github/workflows/codeql-analysis.yml` など
 
 ---
@@ -458,12 +459,11 @@ Action のリポジトリ自体にも普通に Workflow を定義できるので
 ### 9.1 CI（Push/PR 時）
 
 - トリガー：`push` / `pull_request`
-- 内容：
-  - `npm ci`
-  - `npm run lint`
-  - `npm test`
-  - `npm run build`（`dist/index.js` を更新）
-  - `check-dist`（テンプレート標準ワークフロー）
+- 内容（Verify workflow で並列ジョブとして実行）：
+  - Prettier チェック＋ESLint
+  - `npm run ci-test`
+  - `npm run bundle`（`dist/index.js` を更新）＋`git diff` で `dist/` 差分検証
+  - `npm audit --omit=dev --audit-level=high`
 
 ### 9.2 リリース・バージョニング
 
