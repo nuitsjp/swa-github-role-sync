@@ -51,65 +51,87 @@ Actionを利用してアクセス権を自動同期し、招待リンクを利�
 | `swa-name` / `swa-resource-group`   | 対象SWAを特定。                                                                       | Azureポータルの正確な名称                                     |
 | `swa-domain`                        | 招待リンクのドメイン。                                                                | カスタムドメイン運用時に必須、無ければ省略                    |
 | `role-for-admin` / `role-for-write` | GitHub権限に応じて割り当てるSWAロール文字列。                                         | `github-admin`, `github-writer`                               |
-| `role-prefix`                       | 差分対象とするSWAロールのプレフィックス。`role-for-*`で独自ロールを使う際に合わせる。 | `github-`                                                     |
 | `discussion-category-name`          | 招待サマリを掲示するカテゴリ名。                                                      | `Announcements`など利用者に通知が届くカテゴリ                 |
 | `discussion-title-template`         | Discussionタイトル。`{swaName}`/`{repo}`/`{date}`を差し込み。                         | `SWA access invites for {swaName} ({repo}) - {date}`          |
 | `discussion-body-template`          | Discussion本文。`{summaryMarkdown}`を含めるとAction生成サマリが埋め込まれる。         | デフォルトテンプレートを推奨                                  |
 
 ## Step-by-Step Setup
 
-### 1. Discussionsカテゴリの準備
+以下ではAzureリソース準備からworkflow公開までを順に説明します。既に完了している工程はスキップして構いません。
 
-`Settings → General → Discussions → Manage categories`で招待サマリを投稿するカテゴリを作成し、`discussion-category-name`に指定する名称を控えます。通知が必要な場合は`Announcements`など既存のカテゴリを流用しても構いません。
+### 1. Azure CLIで基盤を用意する
 
-### 2. Secrets登録
-
-`Settings → Secrets and variables → Actions`で次の値を登録します。
-
-- `AZURE_CLIENT_ID`
-- `AZURE_TENANT_ID`
-- `AZURE_SUBSCRIPTION_ID`
-
-`github-token`としてはデフォルトの`GITHUB_TOKEN`を利用できますが、別リポジトリを`target-repo`に指定する場合はPATを追加してください。
-
-#### 2.1 Azure CLIでIDを取得する例
-
-Azure CLIでログイン済みであれば以下のスクリプトで必要なIDをまとめて取得できます。既存のサービスプリンシパル名を指定するか、コメントアウトしている`create-for-rbac`コマンドで新規作成してください。
+#### 1.1 ログインとサブスクリプション確認
 
 ```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-# AzureにログインしているアカウントからIDを取得
-subscription_id=$(az account show --query id -o tsv)
-tenant_id=$(az account show --query tenantId -o tsv)
-
-service_principal_name="swa-github-role-sync"
-
-# 既存SPを参照
-app_id=$(az ad sp list \
-  --display-name "$service_principal_name" \
-  --query "[0].appId" -o tsv)
-
-# 無い場合は次で作成し、出力のappIdを利用
-# az ad sp create-for-rbac \
-#   --name "$service_principal_name" \
-#   --role "Contributor" \
-#   --scopes "/subscriptions/$subscription_id/resourceGroups/<rg-name>" \
-#   --output json
-
-echo "AZURE_SUBSCRIPTION_ID=$subscription_id"
-echo "AZURE_TENANT_ID=$tenant_id"
-echo "AZURE_CLIENT_ID=$app_id"
+az login
+az account show --query "{id:id, tenantId:tenantId}" -o json
 ```
 
-#### 2.2 Azure CLIでOIDCフェデレーション資格情報を登録
+出力例:
 
-`azure/login@v2`でOIDCを利用するには、Azure ADアプリにGitHub Actions用のフェデレーション資格情報を付与します。以下は`main`ブランチを許可する例です。
+```json
+{
+  "id": "3b8a5c2d-1234-5678-9abc-def012345678",
+  "tenantId": "0f12ab34-5678-90ab-cdef-1234567890ab"
+}
+```
+
+#### 1.2 リソースグループ作成
+
+```bash
+az group create \
+  --name rg-repository-name-prod \
+  --location japaneast
+```
+
+出力例:
+
+```json
+{
+  "id": "/subscriptions/3b8a5c2d-1234-5678-9abc-def012345678/resourceGroups/rg-repository-name-prod",
+  "location": "japaneast",
+  "managedBy": null,
+  "name": "rg-repository-name-prod",
+  "properties": {
+    "provisioningState": "Succeeded"
+  },
+  "tags": null,
+  "type": "Microsoft.Resources/resourceGroups"
+}
+```
+
+#### 1.3 サービスプリンシパルの作成/確認
+
+新規に作成する場合:
+
+```bash
+az ad sp create-for-rbac \
+  --name "sp-repository-name-prod" \
+  --role "Contributor" \
+  --scopes "/subscriptions/3b8a5c2d-1234-5678-9abc-def012345678/resourceGroups/rg-repository-name-prod"
+```
+
+出力例（`appId`, `tenant`, `password`を控える）:
+
+```json
+{
+  "appId": "11111111-2222-3333-4444-555555555555",
+  "displayName": "sp-repository-name-prod",
+  "password": "xyz1234.-generated-password",
+  "tenant": "0f12ab34-5678-90ab-cdef-1234567890ab"
+}
+```
+
+既存のサービスプリンシパルを使う場合は`az ad sp show --id <appId>`で`appId`と`tenant`を取得します。
+
+#### 1.4 OIDCフェデレーション資格情報を追加
+
+`azure/login@v2`でOIDCを利用するため、前項の`appId`にGitHub Actions主体を紐づけます。
 
 ```bash
 az ad app federated-credential create \
-  --id "$app_id" \
+  --id "11111111-2222-3333-4444-555555555555" \
   --parameters '{
     "name": "swa-role-sync-main",
     "issuer": "https://token.actions.githubusercontent.com",
@@ -119,19 +141,46 @@ az ad app federated-credential create \
   }'
 ```
 
-`subject`はworkflowの種類に応じて変更します。例えば`workflow_dispatch`専用にしたい場合は`ref:refs/heads/<branch>`を固定し、`environment:<env-name>`で環境スコープを指定することもできます。
+出力例:
 
-### 3. Workflow作成
+```json
+{
+  "audiences": [
+    "api://AzureADTokenExchange"
+  ],
+  "issuer": "https://token.actions.githubusercontent.com",
+  "name": "swa-role-sync-main",
+  "subject": "repo:nuitsjp/swa-github-role-sync:ref:refs/heads/main"
+}
+```
 
-READMEのQuick Startをベースに`.github/workflows/sync-swa-roles.yml`を作成し、Step 2で登録したSecretsを参照するように設定します。複数SWAに展開する場合はworkflowを複製し、それぞれの`discussion-category-name`と`role`設定を分けます。
+別ブランチや環境を許可したい場合は`subject`を`repo:<owner>/<repo>:ref:refs/heads/<branch>`や`repo:<owner>/<repo>:environment:<env-name>`に調整します。
 
-### 4. テスト実行
+### 2. Secrets登録
 
-`workflow_dispatch`で手動実行し、`core.summary`とDiscussion本文が期待どおりか確認します。初回の同期では対象ユーザー全員に招待が発行されるため、通知タイミングをチームと共有しておきましょう。
+GitHub側で`Settings → Secrets and variables → Actions`を開き、Step 1で得た値を登録します。
 
-### 5. スケジュール化
+- `AZURE_CLIENT_ID` → サービスプリンシパルの`appId`
+- `AZURE_TENANT_ID` → `tenant`
+- `AZURE_SUBSCRIPTION_ID` → `az account show`で取得した`id`
 
-動作に問題が無ければ`schedule`トリガーを追加し、週次や平日日次など組織の棚卸しサイクルに合わせてcron式を設定します。Pull Requestマージ後に即反映したい場合は`push`イベントも併用できます。
+`github-token`は`GITHUB_TOKEN`を使う場合は追加不要です。`target-repo`に他リポジトリを指定する際はアクセス可能なPATを`GH_REPO_TOKEN`などで登録し、`github-token`に設定してください。
+
+### 3. Discussionsカテゴリの準備
+
+`Settings → General → Discussions → Manage categories`で同期結果を掲示するカテゴリを作成し、`discussion-category-name`に指定する名称を控えます。通知用途に合わせて公開/限定カテゴリを選択してください。
+
+### 4. Workflow作成
+
+READMEのQuick Startをベースに`.github/workflows/sync-swa-roles.yml`を作成し、Step 2で登録したSecretsを参照するように設定します。複数SWAを同期する場合はworkflowを複数用意して`with`パラメータを切り替えます。
+
+### 5. テスト実行
+
+`workflow_dispatch`で手動実行し、`core.summary`とDiscussion本文が期待どおりか確認します。初回は対象ユーザー全員に招待リンクが生成されるため、告知タイミングをチームと共有してから実行してください。
+
+### 6. スケジュール化
+
+問題なければ`schedule`トリガーを追加し、週次/平日日次など組織の棚卸し周期に合わせてcron式を設定します。即時反映したい場合は`push`や`pull_request`イベントと併用することもできます。
 
 ## Recommended Workflow Patterns
 

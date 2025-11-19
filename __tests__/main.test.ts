@@ -401,6 +401,32 @@ describe('run', () => {
     )
   })
 
+  it('fails when eligible collaborators exceed the SWA role limit', async () => {
+    getSwaDefaultHostnameMock.mockResolvedValue('swa.azurewebsites.net')
+    const tooManyUsers = Array.from({ length: 26 }, (_, idx) => ({
+      login: `user${idx}`,
+      role: 'write'
+    }))
+    listEligibleCollaboratorsMock.mockResolvedValue(tooManyUsers)
+
+    const { run } = await loadMain()
+    await run()
+
+    expect(listSwaUsersMock).not.toHaveBeenCalled()
+    expect(inviteUserMock).not.toHaveBeenCalled()
+    expect(updateUserRolesMock).not.toHaveBeenCalled()
+    expect(clearUserRolesMock).not.toHaveBeenCalled()
+    expect(createDiscussionMock).not.toHaveBeenCalled()
+    expect(setFailedMock).toHaveBeenCalledWith(
+      'SWA custom role assignment limit (25) exceeded: 26 users require custom roles'
+    )
+    const summaryMarkdown = summaryAddRawMock.mock.calls[0][0] as string
+    expect(summaryMarkdown).toContain('Status: failure')
+    expect(summaryMarkdown).toContain(
+      'Error: SWA custom role assignment limit (25) exceeded: 26 users require custom roles'
+    )
+  })
+
   it('handles missing required inputs before repo parsing', async () => {
     inputs.delete('github-token')
 

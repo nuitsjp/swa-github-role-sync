@@ -15,7 +15,27 @@ import {
 } from './github.js'
 import { computeSyncPlan } from './plan.js'
 import { buildSummaryMarkdown, fillTemplate } from './templates.js'
-import type { InvitationResult, RemovalResult, UpdateResult } from './types.js'
+import type {
+  DesiredUser,
+  InvitationResult,
+  RemovalResult,
+  UpdateResult
+} from './types.js'
+
+const SWA_CUSTOM_ROLE_ASSIGNMENT_LIMIT = 25
+
+function assertWithinSwaRoleLimit(users: DesiredUser[]): void {
+  const uniqueLogins = new Set(
+    users
+      .map((user) => user.login.trim().toLowerCase())
+      .filter((login) => login.length > 0)
+  )
+  if (uniqueLogins.size > SWA_CUSTOM_ROLE_ASSIGNMENT_LIMIT) {
+    throw new Error(
+      `SWA custom role assignment limit (${SWA_CUSTOM_ROLE_ASSIGNMENT_LIMIT}) exceeded: ${uniqueLogins.size} users require custom roles`
+    )
+  }
+}
 
 type Inputs = {
   githubToken: string
@@ -92,6 +112,8 @@ export async function run(): Promise<void> {
     core.info(
       `Found ${githubUsers.length} GitHub users with write/admin (owner/repo: ${repoFullName})`
     )
+
+    assertWithinSwaRoleLimit(githubUsers)
 
     const swaUsers = await listSwaUsers(inputs.swaName, inputs.swaResourceGroup)
     const plan = computeSyncPlan(
