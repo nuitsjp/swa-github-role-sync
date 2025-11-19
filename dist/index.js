@@ -32250,7 +32250,7 @@ async function listEligibleCollaborators(octokit, owner, repo) {
     coreExports.debug(`Eligible collaborators: ${desired.length}`);
     return desired;
 }
-async function findDiscussionCategoryId(token, owner, repo, categoryName) {
+async function getDiscussionCategoryId(token, owner, repo, categoryName) {
     const graphqlClient = graphql2.defaults({
         headers: { authorization: `token ${token}` }
     });
@@ -32273,11 +32273,12 @@ async function findDiscussionCategoryId(token, owner, repo, categoryName) {
     }
     return { repositoryId: query.repository.id, categoryId: category.id };
 }
-async function createDiscussion(token, owner, repo, categoryName, title, body) {
+async function createDiscussion(token, owner, repo, categoryName, title, body, categoryIds) {
     const graphqlClient = graphql2.defaults({
         headers: { authorization: `token ${token}` }
     });
-    const { repositoryId, categoryId } = await findDiscussionCategoryId(token, owner, repo, categoryName);
+    const { repositoryId, categoryId } = categoryIds ??
+        (await getDiscussionCategoryId(token, owner, repo, categoryName));
     const mutation = await graphqlClient(`
       mutation (
         $repositoryId: ID!
@@ -32352,8 +32353,14 @@ function computeSyncPlan(githubUsers, swaUsers, roleForAdmin, roleForWrite) {
     return { toAdd, toUpdate, toRemove };
 }
 
-function fillTemplate(template, values) {
-    return template.replace(/\{(\w+)\}/g, (_, key) => values[key] ?? '');
+function fillTemplate(template, values, options = {}) {
+    const { onMissingKey } = options;
+    return template.replace(/\{(\w+)\}/g, (_, key) => {
+        if (values[key] === undefined) {
+            onMissingKey?.(key);
+        }
+        return values[key] ?? '';
+    });
 }
 function buildSummaryMarkdown({ repo, swaName, added, updated, removed, discussionUrl, status = 'success', failureMessage }) {
     const lines = [
@@ -32424,6 +32431,7 @@ async function run() {
         inputs = getInputs();
         const { owner, repo } = parseTargetRepo(inputs.targetRepo);
         repoFullName = `${owner}/${repo}`;
+        const categoryIds = await getDiscussionCategoryId(inputs.githubToken, owner, repo, inputs.discussionCategoryName);
         const swaDomain = inputs.swaDomain ||
             (await getSwaDefaultHostname(inputs.swaName, inputs.swaResourceGroup));
         coreExports.info(`Using SWA domain: ${swaDomain}`);
@@ -32431,6 +32439,7 @@ async function run() {
         const githubUsers = await listEligibleCollaborators(octokit, owner, repo);
         coreExports.info(`Found ${githubUsers.length} GitHub users with write/admin (owner/repo: ${repoFullName})`);
         const swaUsers = await listSwaUsers(inputs.swaName, inputs.swaResourceGroup);
+        coreExports.info(`Found ${swaUsers.length} SWA GitHub users: ${swaUsers.length ? swaUsers.map((user) => user.userDetails).join(', ') : 'none'}`);
         const plan = computeSyncPlan(githubUsers, swaUsers, inputs.roleForAdmin, inputs.roleForWrite);
         coreExports.info(`Plan -> add:${plan.toAdd.length} update:${plan.toUpdate.length} remove:${plan.toRemove.length}`);
         for (const add of plan.toAdd) {
@@ -32462,10 +32471,25 @@ async function run() {
             date: today(),
             summaryMarkdown: syncSummaryMarkdown
         };
-        const discussionTitle = fillTemplate(inputs.discussionTitleTemplate, templateValues);
-        const discussionBody = fillTemplate(inputs.discussionBodyTemplate, templateValues);
+        const missingTemplateKeys = new Set();
+        const onMissingKey = (key) => {
+            missingTemplateKeys.add(key);
+        };
+        const discussionTitle = fillTemplate(inputs.discussionTitleTemplate, templateValues, { onMissingKey });
+        const discussionBodyTemplate = inputs.discussionBodyTemplate;
+        const discussionBody = fillTemplate(discussionBodyTemplate, templateValues, {
+            onMissingKey
+        });
+        if (!discussionBodyTemplate.includes('{summaryMarkdown}')) {
+            coreExports.warning('discussion-body-template does not include {summaryMarkdown}; sync summary will not be added to the discussion body.');
+        }
+        if (missingTemplateKeys.size) {
+            coreExports.warning(`Unknown template placeholders with no value: ${[
+                ...missingTemplateKeys
+            ].join(', ')}`);
+        }
         try {
-            discussionUrl = await createDiscussion(inputs.githubToken, owner, repo, inputs.discussionCategoryName, discussionTitle, discussionBody);
+            discussionUrl = await createDiscussion(inputs.githubToken, owner, repo, inputs.discussionCategoryName, discussionTitle, discussionBody, categoryIds);
             coreExports.info(`Created Discussion: ${discussionUrl}`);
         }
         catch (error) {
