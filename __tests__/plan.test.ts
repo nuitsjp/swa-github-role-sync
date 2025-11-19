@@ -41,4 +41,22 @@ describe('computeSyncPlan', () => {
     ])
     expect(plan.toRemove).toEqual([])
   })
+
+  it('normalizes logins and handles missing roles', () => {
+    const plan = computeSyncPlan(
+      [{ login: ' Alice ', role: 'write' }],
+      [
+        { userDetails: 'alice', provider: 'GitHub' },
+        { userDetails: 'bob', provider: 'GitHub' }
+      ],
+      'github-admin',
+      'github-writer'
+    )
+
+    expect(plan.toAdd).toEqual([])
+    expect(plan.toUpdate).toEqual([
+      { login: 'alice', role: 'github-writer', currentRoles: '' }
+    ])
+    expect(plan.toRemove).toEqual([{ login: 'bob', currentRoles: '' }])
+  })
 })

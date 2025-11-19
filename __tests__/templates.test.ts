@@ -8,6 +8,13 @@ describe('fillTemplate', () => {
     })
     expect(result).toBe('Hello world - prod')
   })
+
+  it('omits unknown placeholders gracefully', () => {
+    const result = fillTemplate('Hello {name} {missing}', {
+      name: 'world'
+    })
+    expect(result).toBe('Hello world ')
+  })
 })
 
 describe('buildSummaryMarkdown', () => {
