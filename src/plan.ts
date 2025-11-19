@@ -23,10 +23,7 @@ function resolveSwaLogin(user: SwaUser): string | undefined {
   return undefined
 }
 
-function normalizeRoles(
-  roles: string | undefined,
-  rolePrefix: string
-): string {
+function normalizeRoles(roles: string | undefined, rolePrefix: string): string {
   if (!roles) return ''
   return roles
     .split(',')
