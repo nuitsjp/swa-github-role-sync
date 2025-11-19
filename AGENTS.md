@@ -26,6 +26,8 @@
 - Format check/fix: `npm run format:check` / `npm run format:write`.
 - Package: `npm run package` (Rollup bundle to `dist/`); full pipeline:
   `npm run all`.
+- CI parity check: `npm run verify` (runs lint + test + Rollup + `dist/`
+  diff check, mirroring the Lint/Check Transpiled workflows).
 - Local action dry-run: `npm run local-action` with `.env` providing inputs.
 
 ## Coding Style & Naming Conventions
@@ -56,5 +58,6 @@
   discussion template or plan logic changes explicitly.
 - Link related issues or workflows; add before/after notes or screenshots for
   discussion body/template changes.
-- Run `npm run lint && npm test && npm run package` before opening a PR; ensure
+- Run `npm run verify` before opening a PR (mirrors Lint + Check Transpiled);
+  ensure
   `dist/` is refreshed when behavior changes.
