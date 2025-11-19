@@ -43,7 +43,7 @@ jobs:
 
           mutation=$(cat <<'GRAPHQL'
           mutation ($id: ID!) {
-            deleteDiscussion(input: {discussionId: $id}) {
+            deleteDiscussion(input: {id: $id}) {
               clientMutationId
             }
           }
