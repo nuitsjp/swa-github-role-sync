@@ -26,11 +26,14 @@
 - Install: `npm install` (Node 20+ required).
 - Lint: `npm run lint` (ESLint with TypeScript/Prettier rules).
 - Test: `npm test` (Jest, Node ESM mode); CI uses `npm run ci-test`.
-- Format check/fix: `npm run format:check` / `npm run format:write`.
+- Format check/fix: `npm run format:check` / `npm run format:write`;
+  docs と workflow YAML も Prettier 管理なので編集後は `npm run format:write`
+  で整形しないと Format & Lint ジョブが失敗します。
 - Package: `npm run package` (Rollup bundle to `dist/`); full pipeline:
   `npm run all`.
-- CI parity check: `npm run verify` (runs lint + test + Rollup + `dist/` diff
-  check, mirroring the Lint/Check Transpiled workflows).
+- CI parity check: `npm run verify` (runs format check + lint + test + Rollup +
+  `dist/` diff check, mirroring the Format/Lint + Lint/Check Transpiled
+  workflows).
 - Local action dry-run: `npm run local-action` with `.env` providing inputs.
 
 ## Coding Style & Naming Conventions
