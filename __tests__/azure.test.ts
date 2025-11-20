@@ -2,13 +2,8 @@ import { jest } from '@jest/globals'
 import { createExecFileMock } from './helpers/execFileMock'
 
 const coreDebugMock = jest.fn()
-const {
-  execFileMock,
-  enqueueSuccess,
-  enqueueFailure,
-  enqueueResult,
-  reset
-} = createExecFileMock()
+const { execFileMock, enqueueSuccess, enqueueFailure, enqueueResult, reset } =
+  createExecFileMock()
 
 function escapeRegExp(input: string): string {
   return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -115,9 +110,9 @@ describe('azure helpers', () => {
 
   // stderrが未定義のケースでもメッセージを崩さないことを確認
   it('preserves error message when stderr is not available', async () => {
-    const error = new Error(
-      'Command failed: az staticwebapp show'
-    ) as Error & { stderr?: string }
+    const error = new Error('Command failed: az staticwebapp show') as Error & {
+      stderr?: string
+    }
     enqueueResult({ error, stdout: '', stderr: undefined })
 
     const { getSwaDefaultHostname } = await loadAzure()

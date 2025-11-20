@@ -234,10 +234,7 @@ async function executeSyncPlan(context: SyncContext): Promise<SyncResults> {
 
   assertWithinSwaRoleLimit(githubUsers)
 
-  const swaUsers = await listSwaUsers(
-    context.swaName,
-    context.swaResourceGroup
-  )
+  const swaUsers = await listSwaUsers(context.swaName, context.swaResourceGroup)
   const plan = computeSyncPlan(
     githubUsers,
     swaUsers,
@@ -327,13 +324,9 @@ async function executeSyncPlan(context: SyncContext): Promise<SyncResults> {
     { onMissingKey }
   )
   const discussionBodyTemplate = context.discussionBodyTemplate
-  const discussionBody = fillTemplate(
-    discussionBodyTemplate,
-    templateValues,
-    {
-      onMissingKey
-    }
-  )
+  const discussionBody = fillTemplate(discussionBodyTemplate, templateValues, {
+    onMissingKey
+  })
 
   if (!discussionBodyTemplate.includes('{summaryMarkdown}')) {
     core.warning(
