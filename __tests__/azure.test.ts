@@ -67,6 +67,7 @@ beforeEach(() => {
 })
 
 describe('azure helpers', () => {
+  // listSwaUsersがproviderの大小を無視してGitHubユーザーだけ返すことを確認
   it('returns only GitHub users from listSwaUsers regardless of provider case', async () => {
     mockExecOnce(
       JSON.stringify([
@@ -105,6 +106,7 @@ describe('azure helpers', () => {
     expect(coreDebugMock).toHaveBeenCalledWith('Fetched 4 SWA GitHub users')
   })
 
+  // getSwaDefaultHostnameが余分な改行を除去して値を返すケース
   it('resolves default hostname and trims whitespace', async () => {
     mockExecOnce('example.azurewebsites.net\n')
 
@@ -114,6 +116,7 @@ describe('azure helpers', () => {
     )
   })
 
+  // 既定ホスト名が空のときにエラーで落ちることを検証
   it('throws when default hostname is empty', async () => {
     mockExecOnce('\n')
 
@@ -123,6 +126,7 @@ describe('azure helpers', () => {
     )
   })
 
+  // Azure CLI失敗時にstderrの内容をメッセージへ取り込む振る舞い
   it('includes stderr output when Azure CLI fails', async () => {
     mockExecErrorOnce(
       'Command failed: az staticwebapp show',
@@ -137,6 +141,7 @@ describe('azure helpers', () => {
     )
   })
 
+  // stderrが空の場合は元のメッセージを保つことを確認
   it('keeps original error message when stderr output is empty', async () => {
     mockExecErrorOnce('Command failed: az staticwebapp show', '')
 
@@ -146,6 +151,7 @@ describe('azure helpers', () => {
     })
   })
 
+  // すでにstderr文字列がmessageに含まれている場合に重複しないよう検証
   it('does not duplicate stderr content when already present in message', async () => {
     const stderr = 'AuthorizationFailed: repeating details'
     mockExecErrorOnce(`Command failed: az staticwebapp show\n${stderr}`, stderr)
@@ -162,6 +168,7 @@ describe('azure helpers', () => {
     })
   })
 
+  // 招待・更新・削除の順にCLIを呼ぶ正常系
   it('invites and updates users via Azure CLI', async () => {
     mockExecOnce(JSON.stringify({ invitationUrl: 'https://invite/me' }))
     mockExecOnce('', (args) => {
@@ -186,6 +193,7 @@ describe('azure helpers', () => {
     expect(execFileMock).toHaveBeenCalledTimes(3)
   })
 
+  // 招待レスポンスにURLが無い異常系
   it('throws when invite URL is missing in response', async () => {
     mockExecOnce(JSON.stringify({}))
 

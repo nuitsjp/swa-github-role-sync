@@ -2,6 +2,7 @@ import { jest } from '@jest/globals'
 import { buildSummaryMarkdown, fillTemplate } from '../src/templates.js'
 
 describe('fillTemplate', () => {
+  // 既知のプレースホルダーが正しく置換される基本ケース
   it('replaces placeholders', () => {
     const result = fillTemplate('Hello {name} - {env}', {
       name: 'world',
@@ -10,6 +11,7 @@ describe('fillTemplate', () => {
     expect(result).toBe('Hello world - prod')
   })
 
+  // 未知のキーを空文字として扱い、変換が継続することを確認
   it('omits unknown placeholders gracefully', () => {
     const result = fillTemplate('Hello {name} {missing}', {
       name: 'world'
@@ -17,6 +19,7 @@ describe('fillTemplate', () => {
     expect(result).toBe('Hello world ')
   })
 
+  // onMissingKeyコールバックが不足キーを受け取ることを検証
   it('notifies when placeholders are missing', () => {
     const onMissingKey = jest.fn()
 
@@ -32,6 +35,7 @@ describe('fillTemplate', () => {
 })
 
 describe('buildSummaryMarkdown', () => {
+  // 成功ケースでカウントと各セクションが正しく列挙されること
   it('renders counts and sections', () => {
     const markdown = buildSummaryMarkdown({
       repo: 'owner/repo',
@@ -55,6 +59,7 @@ describe('buildSummaryMarkdown', () => {
     expect(markdown).toContain('Removed users')
   })
 
+  // 失敗時にDiscussionリンクとエラーメッセージが含まれること
   it('shows failure details and discussion link when provided', () => {
     const markdown = buildSummaryMarkdown({
       repo: 'owner/repo',

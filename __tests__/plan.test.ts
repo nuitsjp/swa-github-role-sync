@@ -12,6 +12,7 @@ describe('computeSyncPlan', () => {
     { userDetails: 'carol', roles: 'github-writer', provider: 'GitHub' }
   ]
 
+  // 最も基本的なadd/update/removeの仕分けができることを確認
   it('calculates add, update, and remove sets', () => {
     const plan = computeSyncPlan(
       githubUsers,
@@ -27,6 +28,7 @@ describe('computeSyncPlan', () => {
     ])
   })
 
+  // ロール差分がある場合に更新対象へ入ることを検証
   it('marks updates when roles differ', () => {
     const plan = computeSyncPlan(
       githubUsers,
@@ -42,6 +44,7 @@ describe('computeSyncPlan', () => {
     expect(plan.toRemove).toEqual([])
   })
 
+  // ログイン名の大小・空白や空ロールを正規化できるかをテスト
   it('normalizes logins and handles missing roles', () => {
     const plan = computeSyncPlan(
       [{ login: ' Alice ', role: 'write' }],
@@ -60,6 +63,7 @@ describe('computeSyncPlan', () => {
     expect(plan.toRemove).toEqual([{ login: 'bob', currentRoles: '' }])
   })
 
+  // userDetailsが無いSWAユーザーでもdisplayNameでマッチさせられること
   it('falls back to displayName when userDetails are missing', () => {
     const plan = computeSyncPlan(
       githubUsers,
@@ -79,6 +83,7 @@ describe('computeSyncPlan', () => {
     expect(plan.toRemove).toEqual([])
   })
 
+  // anonymous/authenticatedのような既定ロールを比較から外す挙動
   it('ignores Azure default roles when comparing desired roles', () => {
     const plan = computeSyncPlan(
       githubUsers,
@@ -98,6 +103,7 @@ describe('computeSyncPlan', () => {
     expect(plan.toRemove).toEqual([])
   })
 
+  // ログイン名が取得できないSWAユーザーを計画から除外するケース
   it('ignores SWA entries without any identifier data', () => {
     const plan = computeSyncPlan(
       githubUsers,
@@ -114,6 +120,7 @@ describe('computeSyncPlan', () => {
     expect(plan.toRemove).toEqual([])
   })
 
+  // rolePrefixの上書きにより旧Prefix環境でも差分検出できるかを確認
   it('allows configuring the role prefix used for comparison', () => {
     const plan = computeSyncPlan(
       githubUsers,

@@ -21,6 +21,7 @@ beforeEach(() => {
 })
 
 describe('github helpers', () => {
+  // target-repo入力のバリデーションとデフォルト利用を網羅的に確認
   it('parses target repo input with validation and defaults', async () => {
     const { parseTargetRepo } = await loadGithub()
 
@@ -39,6 +40,7 @@ describe('github helpers', () => {
     )
   })
 
+  // 書き込み以上の権限を持つコラボレーターだけを抽出する処理
   it('maps admin and write collaborators for syncing', async () => {
     const { listEligibleCollaborators } = await loadGithub()
     const paginateMock = jest.fn().mockResolvedValue([
@@ -70,6 +72,7 @@ describe('github helpers', () => {
     )
   })
 
+  // GraphQLを用いたDiscussion作成のハッピーパス
   it('creates discussions via GraphQL', async () => {
     graphqlRequestMock
       .mockResolvedValueOnce({
@@ -113,6 +116,7 @@ describe('github helpers', () => {
     )
   })
 
+  // 指定カテゴリが存在しない場合にエラーで失敗する挙動
   it('throws when discussion category is missing', async () => {
     graphqlRequestMock.mockResolvedValueOnce({
       repository: { id: 'repo-id', discussionCategories: { nodes: [] } }

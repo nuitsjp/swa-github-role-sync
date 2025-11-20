@@ -12,6 +12,7 @@ type Collaborator = {
   }
 }
 
+// Action入力からowner/repo形式を解析し、省略時はWorkflowのコンテキストを使う
 export function parseTargetRepo(
   input: string | undefined,
   contextRepo = github.context.repo
@@ -26,6 +27,7 @@ export function parseTargetRepo(
   return { owner, repo }
 }
 
+// GitHubコラボレーターの権限からSWAに対応するロールを推定する
 function toRole(collaborator: Collaborator): DesiredUser | null {
   const { login, permissions } = collaborator
   if (permissions?.admin) {
@@ -37,6 +39,7 @@ function toRole(collaborator: Collaborator): DesiredUser | null {
   return null
 }
 
+// GitHub APIから書き込み以上の権限を持つメンバーを集め、同期対象ユーザーへ変換する
 export async function listEligibleCollaborators(
   octokit: ReturnType<typeof github.getOctokit>,
   owner: string,
@@ -59,6 +62,7 @@ export async function listEligibleCollaborators(
   return desired
 }
 
+// Discussionの作成にはカテゴリIDとリポジトリIDが必要なのでGraphQLで先に取得する
 export async function getDiscussionCategoryId(
   token: string,
   owner: string,
@@ -100,6 +104,7 @@ export async function getDiscussionCategoryId(
   return { repositoryId: query.repository.id, categoryId: category.id }
 }
 
+// Discussionの作成。カテゴリIDが渡されなければ取得してからGraphQLミューテーションを投げる
 export async function createDiscussion(
   token: string,
   owner: string,

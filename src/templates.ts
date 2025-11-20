@@ -4,6 +4,7 @@ type FillTemplateOptions = {
   onMissingKey?: (key: string) => void
 }
 
+// Discussionのテンプレート文字列に{key}形式で値を埋め込み、未定義キーはコールバックで通知する
 export function fillTemplate(
   template: string,
   values: Record<string, string>,
@@ -29,6 +30,7 @@ type SummaryParams = {
   failureMessage?: string
 }
 
+// Jobサマリー兼Discussion本文に貼り付けるMarkdownを合成する
 export function buildSummaryMarkdown({
   repo,
   swaName,

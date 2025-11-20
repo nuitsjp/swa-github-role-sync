@@ -22,8 +22,10 @@ import type {
   UpdateResult
 } from './types.js'
 
+// Azure Static Web Appsのカスタムロールに割り当てられるGitHubユーザー数の上限
 const SWA_CUSTOM_ROLE_ASSIGNMENT_LIMIT = 25
 
+// カスタムロールを付与するユーザー数がAzureの上限を超えていないかを検証する
 function assertWithinSwaRoleLimit(users: DesiredUser[]): void {
   const uniqueLogins = new Set(
     users
@@ -51,6 +53,7 @@ type Inputs = {
   discussionBodyTemplate: string
 }
 
+// GitHub Actionの入力値をまとめて取得し、デフォルト値を補完する
 function getInputs(): Inputs {
   return {
     githubToken: core.getInput('github-token', { required: true }),
@@ -75,10 +78,12 @@ function getInputs(): Inputs {
   }
 }
 
+// yyyy-mm-ddの簡易な日付表現を作成する（discussionタイトル用）
 function today(): string {
   return new Date().toISOString().split('T')[0]
 }
 
+// GitHubとSWAの両方に対してロール同期を行い、結果をDiscussionとJobサマリーに書き出す
 export async function run(): Promise<void> {
   let inputs: Inputs | undefined
   let repoFullName = ''
@@ -90,10 +95,12 @@ export async function run(): Promise<void> {
   const removed: RemovalResult[] = []
 
   try {
+    // 入力値を取得し、同期対象のリポジトリとSWA名などを確定させる
     inputs = getInputs()
     const { owner, repo } = parseTargetRepo(inputs.targetRepo)
     repoFullName = `${owner}/${repo}`
 
+    // DiscussionカテゴリのIDはGraphQLミューテーションで必須なため先に引いておく
     const categoryIds = await getDiscussionCategoryId(
       inputs.githubToken,
       owner,
@@ -101,11 +108,13 @@ export async function run(): Promise<void> {
       inputs.discussionCategoryName
     )
 
+    // SWAドメインは入力優先、無ければ既定ホスト名を問い合わせる
     const swaDomain =
       inputs.swaDomain ||
       (await getSwaDefaultHostname(inputs.swaName, inputs.swaResourceGroup))
     core.info(`Using SWA domain: ${swaDomain}`)
 
+    // GitHub側のコラボレーターを集め、同期対象ユーザーの粗いプランを作る準備をする
     const octokit = github.getOctokit(inputs.githubToken)
     const githubUsers = await listEligibleCollaborators(octokit, owner, repo)
 
@@ -115,6 +124,7 @@ export async function run(): Promise<void> {
 
     assertWithinSwaRoleLimit(githubUsers)
 
+    // SWA側のユーザー一覧を取得して差分計算に渡す
     const swaUsers = await listSwaUsers(inputs.swaName, inputs.swaResourceGroup)
     const plan = computeSyncPlan(
       githubUsers,
@@ -128,6 +138,7 @@ export async function run(): Promise<void> {
       `Plan -> add:${plan.toAdd.length} update:${plan.toUpdate.length} remove:${plan.toRemove.length}`
     )
 
+    // 追加対象には招待リンクを発行する
     for (const add of plan.toAdd) {
       const inviteUrl = await inviteUser(
         inputs.swaName,
@@ -140,6 +151,7 @@ export async function run(): Promise<void> {
       core.info(`Invited ${add.login} with role ${add.role}`)
     }
 
+    // 既存ユーザーのロール差分はupdate APIで上書きする
     for (const update of plan.toUpdate) {
       await updateUserRoles(
         inputs.swaName,
@@ -151,6 +163,7 @@ export async function run(): Promise<void> {
       core.info(`Updated ${update.login} to role ${update.role}`)
     }
 
+    // 不要になったユーザーのロールはクリアしてアクセスを停止させる
     for (const removal of plan.toRemove) {
       await clearUserRoles(
         inputs.swaName,
@@ -170,6 +183,7 @@ export async function run(): Promise<void> {
       status: 'success'
     })
 
+    // 差分が無い場合はDiscussionを作らずにサマリーのみ書き出す
     const hasRoleChanges =
       added.length > 0 || updated.length > 0 || removed.length > 0
 
@@ -177,6 +191,7 @@ export async function run(): Promise<void> {
       summaryMarkdown = syncSummaryMarkdown
       core.info('No SWA role changes detected; skipping discussion creation.')
     } else {
+      // Discussionテンプレートに埋め込む値を先に構築しておく
       const templateValues = {
         swaName: inputs.swaName,
         repo: repoFullName,
@@ -203,6 +218,7 @@ export async function run(): Promise<void> {
         }
       )
 
+      // SummaryをDiscussion本文に載せない設定は意図しているかもしれないので警告のみ
       if (!discussionBodyTemplate.includes('{summaryMarkdown}')) {
         core.warning(
           'discussion-body-template does not include {summaryMarkdown}; sync summary will not be added to the discussion body.'
@@ -285,6 +301,7 @@ export async function run(): Promise<void> {
     }
   } finally {
     if (summaryMarkdown) {
+      // GitHub ActionsのJobサマリーに結果を残し、UIから辿れるようにする
       await core.summary
         .addHeading('SWA role sync')
         .addRaw(summaryMarkdown, true)

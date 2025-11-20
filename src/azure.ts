@@ -3,8 +3,10 @@ import { promisify } from 'node:util'
 import * as core from '@actions/core'
 import type { SwaUser } from './types.js'
 
+// Jestから差し替えやすいようにexecFileをPromise化した関数を共有で持つ
 const execFileAsync = promisify(execFile)
 
+// Azure CLIを呼び出す共通ルーチン。stderrの情報を握り潰さないように整形する
 async function runAzCommand(args: string[]): Promise<string> {
   try {
     const { stdout } = await execFileAsync('az', args, {
@@ -22,6 +24,7 @@ async function runAzCommand(args: string[]): Promise<string> {
   }
 }
 
+// provider文字列はケースや空白が不定なのでここでそろえて比較する
 function normalizeProvider(provider: string | undefined): string {
   return provider ? provider.trim().toLowerCase() : ''
 }
@@ -30,6 +33,7 @@ export async function listSwaUsers(
   name: string,
   resourceGroup: string
 ): Promise<SwaUser[]> {
+  // ユーザー一覧はproviderでフィルタするため、JSON出力を取得して後段で処理する
   const stdout = await runAzCommand([
     'staticwebapp',
     'users',
@@ -42,6 +46,7 @@ export async function listSwaUsers(
     'json'
   ])
   const users = JSON.parse(stdout) as SwaUser[]
+  // GitHub経由のユーザーのみを対象にする（Azure ADなど他プロバイダーは除外）
   const githubUsers = users.filter(
     (user): user is SwaUser => normalizeProvider(user.provider) === 'github'
   )
@@ -53,6 +58,7 @@ export async function getSwaDefaultHostname(
   name: string,
   resourceGroup: string
 ): Promise<string> {
+  // 既定ホスト名はtsv形式で1行だけ返るのでtrimして空判定する
   const stdout = await runAzCommand([
     'staticwebapp',
     'show',
@@ -80,6 +86,7 @@ export async function inviteUser(
   roles: string,
   expirationHours = 24
 ): Promise<string> {
+  // 招待APIは複数種のキーでURLを返すことがあるので既知の順で引き当てる
   const stdout = await runAzCommand([
     'staticwebapp',
     'users',
@@ -115,6 +122,7 @@ export async function updateUserRoles(
   githubUser: string,
   roles: string
 ): Promise<void> {
+  // updateコマンドはinviteと違い戻り値を使わない
   await runAzCommand([
     'staticwebapp',
     'users',
@@ -137,5 +145,6 @@ export async function clearUserRoles(
   resourceGroup: string,
   githubUser: string
 ): Promise<void> {
+  // 空文字を渡すことでAzure CLI側にロール削除を指示する
   await updateUserRoles(name, resourceGroup, githubUser, '')
 }

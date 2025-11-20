@@ -7,12 +7,15 @@ import type {
   SyncPlan
 } from './types.js'
 
+// Azure Static Web Appsに用いるGitHubロール名は接頭辞を合わせて管理する
 export const DEFAULT_ROLE_PREFIX = 'github-'
 
+// GitHubのログイン名は大小や余分な空白が混在しやすいのでここで統一する
 function normalizeLogin(login: string): string {
   return login.trim().toLowerCase()
 }
 
+// SWAユーザー情報はuserDetails/displayNameのどちらかしか無いことがあるので順番に確認する
 function resolveSwaLogin(user: SwaUser): string | undefined {
   if (user.userDetails?.trim()) {
     return normalizeLogin(user.userDetails)
@@ -23,6 +26,7 @@ function resolveSwaLogin(user: SwaUser): string | undefined {
   return undefined
 }
 
+// カンマ区切りのロール配列を整形し、比較対象の接頭辞だけ残した文字列にする
 function normalizeRoles(roles: string | undefined, rolePrefix: string): string {
   if (!roles) return ''
   return roles
@@ -33,6 +37,7 @@ function normalizeRoles(roles: string | undefined, rolePrefix: string): string {
     .join(',')
 }
 
+// GitHub側の希望状態とSWA側の現状から、招待・更新・削除の実行計画を組み立てる
 export function computeSyncPlan(
   githubUsers: DesiredUser[],
   swaUsers: SwaUser[],
@@ -61,6 +66,7 @@ export function computeSyncPlan(
   const toUpdate: PlanUpdate[] = []
   const toRemove: PlanRemove[] = []
 
+  // GitHubユーザーを基準に、存在しないなら招待・存在するならロール差分を調べる
   for (const [login, role] of desired.entries()) {
     const current = existing.get(login)
     if (!current) {
@@ -79,6 +85,7 @@ export function computeSyncPlan(
     }
   }
 
+  // SWA側にだけ残っているユーザーは削除対象とみなす
   for (const [login, user] of existing.entries()) {
     if (!desired.has(login)) {
       toRemove.push({ login, currentRoles: user.roles ?? '' })

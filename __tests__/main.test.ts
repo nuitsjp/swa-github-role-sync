@@ -136,6 +136,7 @@ afterEach(() => {
 })
 
 describe('run', () => {
+  // 成功パスで招待・更新・削除とDiscussion作成まで一通り流れること
   it('syncs roles and creates a discussion with success summary', async () => {
     getSwaDefaultHostnameMock.mockResolvedValue('swa.azurewebsites.net')
     listSwaUsersMock.mockResolvedValue([
@@ -212,6 +213,7 @@ describe('run', () => {
     expect(summaryWriteMock).toHaveBeenCalled()
   })
 
+  // Discussion作成がGraphQLエラーで壊れた場合に失敗サマリーを返す
   it('reports discussion creation failures with failure summary', async () => {
     getSwaDefaultHostnameMock.mockResolvedValue('swa.azurewebsites.net')
     listSwaUsersMock.mockResolvedValue([
@@ -242,6 +244,7 @@ describe('run', () => {
     expect(summaryWriteMock).toHaveBeenCalled()
   })
 
+  // 入力でドメインやテンプレート・ロール名を上書きした場合の挙動
   it('uses provided domain and custom templates with default roles', async () => {
     inputs.set('swa-domain', 'provided.example.net')
     inputs.set('discussion-title-template', 'Custom title for {repo}')
@@ -292,6 +295,7 @@ describe('run', () => {
     )
   })
 
+  // 差分が無いときにDiscussionを作成せず結果だけ出力すること
   it('skips discussion creation when no role changes are needed', async () => {
     getSwaDefaultHostnameMock.mockResolvedValue('swa.azurewebsites.net')
     listEligibleCollaboratorsMock.mockResolvedValue([
@@ -322,6 +326,7 @@ describe('run', () => {
     expect(summaryMarkdown).toContain('Added: 0')
   })
 
+  // Discussionテンプレート内の不足プレースホルダーを警告できるかを確認
   it('logs missing template placeholders', async () => {
     inputs.set(
       'discussion-body-template',
@@ -354,6 +359,7 @@ describe('run', () => {
     )
   })
 
+  // Discussionカテゴリ取得に失敗した時点で残りの処理を打ち切ること
   it('fails fast when discussion category is missing', async () => {
     getDiscussionCategoryIdMock.mockRejectedValueOnce(
       new Error('Discussion category "Announcements" not found')
@@ -377,6 +383,7 @@ describe('run', () => {
     )
   })
 
+  // PromiseがError以外の値でrejectされた場合のエラーハンドリング
   it('handles non-Error failures gracefully', async () => {
     inputs.set('swa-domain', 'provided.example.net')
     getSwaDefaultHostnameMock.mockResolvedValue('fallback-should-not-be-used')
@@ -393,6 +400,7 @@ describe('run', () => {
     expect(summaryMarkdown).toContain('Unknown error')
   })
 
+  // 途中でsetOutput等が落ちても既に構築したサマリーを保持すること
   it('keeps existing summary when a later step fails', async () => {
     getSwaDefaultHostnameMock.mockResolvedValue('swa.azurewebsites.net')
     listSwaUsersMock.mockResolvedValue([
@@ -420,6 +428,7 @@ describe('run', () => {
     expect(summaryMarkdown).toContain('Added: 1')
   })
 
+  // Discussion作成が文字列など非Errorで失敗した際にメッセージを補足する
   it('propagates non-Error causes from discussion creation', async () => {
     getSwaDefaultHostnameMock.mockResolvedValue('swa.azurewebsites.net')
     listSwaUsersMock.mockResolvedValue([
@@ -443,6 +452,7 @@ describe('run', () => {
     )
   })
 
+  // カスタムロール上限を超える人数がいた場合に即座に失敗させる
   it('fails when eligible collaborators exceed the SWA role limit', async () => {
     getSwaDefaultHostnameMock.mockResolvedValue('swa.azurewebsites.net')
     const tooManyUsers = Array.from({ length: 26 }, (_, idx) => ({
@@ -469,6 +479,7 @@ describe('run', () => {
     )
   })
 
+  // 必須入力が欠けているときにリポジトリ解析より前で失敗すること
   it('handles missing required inputs before repo parsing', async () => {
     inputs.delete('github-token')
 
@@ -484,6 +495,7 @@ describe('run', () => {
     expect(summaryMarkdown).toContain('Static Web App: unknown')
   })
 
+  // サマリー構築後に非Error例外が出てもUnknown扱いでまとめるケース
   it('treats non-Error failures after summary as unknown while keeping summary', async () => {
     getSwaDefaultHostnameMock.mockResolvedValue('swa.azurewebsites.net')
     listSwaUsersMock.mockResolvedValue([
@@ -510,6 +522,7 @@ describe('run', () => {
     expect(summaryMarkdown).toContain('Status: success')
   })
 
+  // getInput自体が非Errorで失敗した場合でもunknownを埋めるリカバリー
   it('falls back to unknown fields when core inputs throw non-Error values', async () => {
     getInputMock.mockImplementation((name: string) => {
       if (name === 'github-token') {
