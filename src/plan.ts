@@ -7,16 +7,23 @@ import type {
   SyncPlan
 } from './types.js'
 
-// Azure Static Web Appsに用いるGitHubロール名は接頭辞を合わせて管理する
-/** 差分判定に用いるロール名のデフォルト接頭辞。 */
+/** 差分判定に用いるロール名のデフォルト接頭辞 */
 export const DEFAULT_ROLE_PREFIX = 'github-'
 
-// GitHubのログイン名は大小や余分な空白が混在しやすいのでここで統一する
+/**
+ * GitHubログイン名を正規化する。
+ * @param login GitHubログイン名。
+ * @returns 小文字化・トリム済みのログイン名。
+ */
 function normalizeLogin(login: string): string {
   return login.trim().toLowerCase()
 }
 
-// SWAユーザー情報はuserDetails/displayNameのどちらかしか無いことがあるので順番に確認する
+/**
+ * SWAユーザー情報からGitHubログイン名を解決する。
+ * @param user SWAユーザー情報。
+ * @returns 正規化済みログイン名、解決できない場合はundefined。
+ */
 function resolveSwaLogin(user: SwaUser): string | undefined {
   if (user.userDetails?.trim()) {
     return normalizeLogin(user.userDetails)
@@ -27,7 +34,12 @@ function resolveSwaLogin(user: SwaUser): string | undefined {
   return undefined
 }
 
-// カンマ区切りのロール配列を整形し、比較対象の接頭辞だけ残した文字列にする
+/**
+ * カンマ区切りのロール文字列を正規化する。
+ * @param roles ロール文字列（カンマ区切り）。
+ * @param rolePrefix 同期対象のロール接頭辞。
+ * @returns ソート済みの正規化ロール文字列。
+ */
 function normalizeRoles(roles: string | undefined, rolePrefix: string): string {
   if (!roles) return ''
   return roles
@@ -38,7 +50,6 @@ function normalizeRoles(roles: string | undefined, rolePrefix: string): string {
     .join(',')
 }
 
-// GitHub側の希望状態とSWA側の現状から、招待・更新・削除の実行計画を組み立てる
 /**
  * GitHubの理想状態とSWAの現状を比較し、招待/更新/削除の差分プランを生成する。
  * @param githubUsers GitHubの書き込み以上ユーザーと役割。
@@ -75,14 +86,15 @@ export function computeSyncPlan(
   const toUpdate: PlanUpdate[] = []
   const toRemove: PlanRemove[] = []
 
-  // GitHubユーザーを基準に、存在しないなら招待・存在するならロール差分を調べる
   for (const [login, role] of desired.entries()) {
     const current = existing.get(login)
     if (!current) {
+      // SWAに未登録なら招待が必要
       toAdd.push({ login, role })
       continue
     }
 
+    // 既存ユーザーのロールが理想状態と異なれば更新対象
     const currentRoles = normalizeRoles(current.roles, rolePrefix)
     const desiredRoles = normalizeRoles(role, rolePrefix)
     if (currentRoles !== desiredRoles) {
@@ -94,9 +106,9 @@ export function computeSyncPlan(
     }
   }
 
-  // SWA側にだけ残っているユーザーは削除対象とみなす
   for (const [login, user] of existing.entries()) {
     if (!desired.has(login)) {
+      // GitHub側に存在しないSWAユーザーは削除対象
       toRemove.push({ login, currentRoles: user.roles ?? '' })
     }
   }

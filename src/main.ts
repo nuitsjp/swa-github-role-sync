@@ -22,10 +22,9 @@ import type {
   UpdateResult
 } from './types.js'
 
-// Azure Static Web Appsのカスタムロールに割り当てられるGitHubユーザー数の上限
+/** Azure Static Web Appsのカスタムロールに割り当てられるGitHubユーザー数の上限 */
 const SWA_CUSTOM_ROLE_ASSIGNMENT_LIMIT = 25
 
-// カスタムロールを付与するユーザー数がAzureの上限を超えていないかを検証する
 /**
  * カスタムロール割り当て数がSWAの上限を超えないことを事前にチェックする。
  * @param users GitHub権限から抽出した同期対象ユーザー。
@@ -103,7 +102,6 @@ function parseInvitationExpirationHours(input: string): number {
   return hours
 }
 
-// GitHub Actionの入力値をまとめて取得し、デフォルト値を補完する
 /**
  * GitHub Action入力を集約し、デフォルト値や検証済みの型を付与する。
  * @returns SWA同期で利用する各種入力。
@@ -136,7 +134,6 @@ function getInputs(): Inputs {
   }
 }
 
-// yyyy-mm-ddの簡易な日付表現を作成する（discussionタイトル用）
 /**
  * Discussionタイトル向けの簡易日付（YYYY-MM-DD）を返す。
  */
@@ -401,7 +398,6 @@ async function writeJobSummary(summaryMarkdown: string): Promise<void> {
     .write()
 }
 
-// GitHubとSWAの両方に対してロール同期を行い、結果をDiscussionとJobサマリーに書き出す
 /**
  * GitHubリポジトリの権限をソース・オブ・トゥルースとしてSWAロールを同期するエントリーポイント。
  * 成否にかかわらずJobサマリーへ結果を出力する。

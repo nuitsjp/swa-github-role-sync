@@ -31250,9 +31250,14 @@ function requireGithub () {
 
 var githubExports = requireGithub();
 
-// Jestから差し替えやすいようにexecFileをPromise化した関数を共有で持つ
+/** Promise化されたexecFile関数 */
 const execFileAsync = promisify(execFile);
-// Azure CLIを呼び出す共通ルーチン。stderrの情報を握り潰さないように整形する
+/**
+ * Azure CLIコマンドを実行する。
+ * @param args CLIに渡す引数配列。
+ * @returns 標準出力の文字列。
+ * @throws コマンド実行エラー（stderrを含む）。
+ */
 async function runAzCommand(args) {
     try {
         const { stdout } = await execFileAsync('az', args, {
@@ -31269,7 +31274,11 @@ async function runAzCommand(args) {
         throw execError;
     }
 }
-// provider文字列はケースや空白が不定なのでここでそろえて比較する
+/**
+ * プロバイダー文字列を正規化する。
+ * @param provider プロバイダー名。
+ * @returns 小文字化・トリム済みのプロバイダー名。
+ */
 function normalizeProvider(provider) {
     return provider ? provider.trim().toLowerCase() : '';
 }
@@ -31280,7 +31289,6 @@ function normalizeProvider(provider) {
  * @returns GitHubプロバイダーのユーザーのみを返す配列。
  */
 async function listSwaUsers(name, resourceGroup) {
-    // ユーザー一覧はproviderでフィルタするため、JSON出力を取得して後段で処理する
     const stdout = await runAzCommand([
         'staticwebapp',
         'users',
@@ -31293,7 +31301,7 @@ async function listSwaUsers(name, resourceGroup) {
         'json'
     ]);
     const users = JSON.parse(stdout);
-    // GitHub経由のユーザーのみを対象にする（Azure ADなど他プロバイダーは除外）
+    // GitHubプロバイダーのみをフィルタリング
     const githubUsers = users.filter((user) => normalizeProvider(user.provider) === 'github');
     coreExports.debug(`Fetched ${githubUsers.length} SWA GitHub users`);
     return githubUsers;
@@ -31306,7 +31314,6 @@ async function listSwaUsers(name, resourceGroup) {
  * @throws 解決できない場合。
  */
 async function getSwaDefaultHostname(name, resourceGroup) {
-    // 既定ホスト名はtsv形式で1行だけ返るのでtrimして空判定する
     const stdout = await runAzCommand([
         'staticwebapp',
         'show',
@@ -31336,7 +31343,6 @@ async function getSwaDefaultHostname(name, resourceGroup) {
  * @returns 招待URL。
  */
 async function inviteUser(name, resourceGroup, domain, githubUser, roles, expirationHours = 24) {
-    // 招待APIは複数種のキーでURLを返すことがあるので既知の順で引き当てる
     const stdout = await runAzCommand([
         'staticwebapp',
         'users',
@@ -31359,6 +31365,7 @@ async function inviteUser(name, resourceGroup, domain, githubUser, roles, expira
         'json'
     ]);
     const result = JSON.parse(stdout);
+    // 複数の可能性があるキー名から招待URLを取得
     const url = result.inviteUrl ?? result.invitationUrl ?? result.url ?? '';
     if (!url) {
         throw new Error(`Failed to retrieve invite URL for ${githubUser}`);
@@ -31373,7 +31380,6 @@ async function inviteUser(name, resourceGroup, domain, githubUser, roles, expira
  * @param roles 設定するロール（カンマ区切り）。空文字で削除を指示。
  */
 async function updateUserRoles(name, resourceGroup, githubUser, roles) {
-    // updateコマンドはinviteと違い戻り値を使わない
     await runAzCommand([
         'staticwebapp',
         'users',
@@ -31397,7 +31403,7 @@ async function updateUserRoles(name, resourceGroup, githubUser, roles) {
  * @param githubUser 対象GitHubユーザー。
  */
 async function clearUserRoles(name, resourceGroup, githubUser) {
-    // 空文字を渡すことでAzure CLI側にロール削除を指示する
+    // 空文字でロール削除を指示
     await updateUserRoles(name, resourceGroup, githubUser, '');
 }
 
@@ -32271,7 +32277,6 @@ var graphql2 = withDefaults(request, {
   url: "/graphql"
 });
 
-// Action入力からowner/repo形式を解析し、省略時はWorkflowのコンテキストを使う
 /**
  * target-repo入力を解析し、省略時は現在のworkflowコンテキストを採用する。
  * @param input Action入力`target-repo`の文字列（owner/repo形式）。
@@ -32288,7 +32293,11 @@ function parseTargetRepo(input, contextRepo = githubExports.context.repo) {
     }
     return { owner, repo };
 }
-// GitHubコラボレーターの権限からSWAに対応するロールを推定する
+/**
+ * GitHubコラボレーターの権限からSWAロールを決定する。
+ * @param collaborator コラボレーター情報。
+ * @returns 同期対象ユーザー、権限不足の場合はnull。
+ */
 function toRole(collaborator) {
     const { login, permissions } = collaborator;
     if (permissions?.admin) {
@@ -32299,12 +32308,12 @@ function toRole(collaborator) {
     }
     return null;
 }
-// GitHub APIから書き込み以上の権限を持つメンバーを集め、同期対象ユーザーへ変換する
 /**
  * GitHub APIからwrite/maintain/admin権限を持つユーザーを列挙し、同期用の形へ整形する。
  * @param octokit Octokitインスタンス。
  * @param owner リポジトリ所有者。
  * @param repo リポジトリ名。
+ * @returns 同期対象ユーザー配列。
  */
 async function listEligibleCollaborators(octokit, owner, repo) {
     const collaborators = await octokit.paginate(octokit.rest.repos.listCollaborators, {
@@ -32319,7 +32328,6 @@ async function listEligibleCollaborators(octokit, owner, repo) {
     coreExports.debug(`Eligible collaborators: ${desired.length}`);
     return desired;
 }
-// Discussionの作成にはカテゴリIDとリポジトリIDが必要なのでGraphQLで先に取得する
 /**
  * Discussion作成に必要なリポジトリIDとカテゴリIDをGraphQLで取得する。
  * @param token GitHubトークン。
@@ -32351,7 +32359,6 @@ async function getDiscussionCategoryId(token, owner, repo, categoryName) {
     }
     return { repositoryId: query.repository.id, categoryId: category.id };
 }
-// Discussionの作成。カテゴリIDは事前に取得しておき、ここではミューテーションのみ実行する
 /**
  * 取得済みカテゴリIDを使ってDiscussionを作成する。
  * @param token GitHubトークン。
@@ -32395,14 +32402,21 @@ async function createDiscussion(token, owner, repo, categoryName, title, body, c
     return mutation.createDiscussion.discussion.url;
 }
 
-// Azure Static Web Appsに用いるGitHubロール名は接頭辞を合わせて管理する
-/** 差分判定に用いるロール名のデフォルト接頭辞。 */
+/** 差分判定に用いるロール名のデフォルト接頭辞 */
 const DEFAULT_ROLE_PREFIX = 'github-';
-// GitHubのログイン名は大小や余分な空白が混在しやすいのでここで統一する
+/**
+ * GitHubログイン名を正規化する。
+ * @param login GitHubログイン名。
+ * @returns 小文字化・トリム済みのログイン名。
+ */
 function normalizeLogin(login) {
     return login.trim().toLowerCase();
 }
-// SWAユーザー情報はuserDetails/displayNameのどちらかしか無いことがあるので順番に確認する
+/**
+ * SWAユーザー情報からGitHubログイン名を解決する。
+ * @param user SWAユーザー情報。
+ * @returns 正規化済みログイン名、解決できない場合はundefined。
+ */
 function resolveSwaLogin(user) {
     if (user.userDetails?.trim()) {
         return normalizeLogin(user.userDetails);
@@ -32412,7 +32426,12 @@ function resolveSwaLogin(user) {
     }
     return undefined;
 }
-// カンマ区切りのロール配列を整形し、比較対象の接頭辞だけ残した文字列にする
+/**
+ * カンマ区切りのロール文字列を正規化する。
+ * @param roles ロール文字列（カンマ区切り）。
+ * @param rolePrefix 同期対象のロール接頭辞。
+ * @returns ソート済みの正規化ロール文字列。
+ */
 function normalizeRoles(roles, rolePrefix) {
     if (!roles)
         return '';
@@ -32423,7 +32442,6 @@ function normalizeRoles(roles, rolePrefix) {
         .sort()
         .join(',');
 }
-// GitHub側の希望状態とSWA側の現状から、招待・更新・削除の実行計画を組み立てる
 /**
  * GitHubの理想状態とSWAの現状を比較し、招待/更新/削除の差分プランを生成する。
  * @param githubUsers GitHubの書き込み以上ユーザーと役割。
@@ -32449,13 +32467,14 @@ function computeSyncPlan(githubUsers, swaUsers, roleForAdmin, roleForWrite, opti
     const toAdd = [];
     const toUpdate = [];
     const toRemove = [];
-    // GitHubユーザーを基準に、存在しないなら招待・存在するならロール差分を調べる
     for (const [login, role] of desired.entries()) {
         const current = existing.get(login);
         if (!current) {
+            // SWAに未登録なら招待が必要
             toAdd.push({ login, role });
             continue;
         }
+        // 既存ユーザーのロールが理想状態と異なれば更新対象
         const currentRoles = normalizeRoles(current.roles, rolePrefix);
         const desiredRoles = normalizeRoles(role, rolePrefix);
         if (currentRoles !== desiredRoles) {
@@ -32466,16 +32485,22 @@ function computeSyncPlan(githubUsers, swaUsers, roleForAdmin, roleForWrite, opti
             });
         }
     }
-    // SWA側にだけ残っているユーザーは削除対象とみなす
     for (const [login, user] of existing.entries()) {
         if (!desired.has(login)) {
+            // GitHub側に存在しないSWAユーザーは削除対象
             toRemove.push({ login, currentRoles: user.roles ?? '' });
         }
     }
     return { toAdd, toUpdate, toRemove };
 }
 
-// Discussionのテンプレート文字列に{key}形式で値を埋め込み、未定義キーはコールバックで通知する
+/**
+ * テンプレート文字列の{key}形式プレースホルダーを値で置換する。
+ * @param template テンプレート文字列。
+ * @param values 置換値のマップ。
+ * @param options 未定義キー通知用のコールバック。
+ * @returns 置換済み文字列。
+ */
 function fillTemplate(template, values, options = {}) {
     const { onMissingKey } = options;
     return template.replace(/\{(\w+)\}/g, (_, key) => {
@@ -32485,7 +32510,11 @@ function fillTemplate(template, values, options = {}) {
         return values[key] ?? '';
     });
 }
-// Jobサマリー兼Discussion本文に貼り付けるMarkdownを合成する
+/**
+ * JobサマリーおよびDiscussion本文用のMarkdownを生成する。
+ * @param params サマリー生成に必要なパラメーター。
+ * @returns Markdown形式のサマリー文字列。
+ */
 function buildSummaryMarkdown({ repo, swaName, added, updated, removed, discussionUrl, status = 'success', failureMessage }) {
     const lines = [
         `- Status: ${status}`,
@@ -32520,9 +32549,8 @@ function buildSummaryMarkdown({ repo, swaName, added, updated, removed, discussi
     return [lines.join('\n'), sections.join('\n\n')].filter(Boolean).join('\n\n');
 }
 
-// Azure Static Web Appsのカスタムロールに割り当てられるGitHubユーザー数の上限
+/** Azure Static Web Appsのカスタムロールに割り当てられるGitHubユーザー数の上限 */
 const SWA_CUSTOM_ROLE_ASSIGNMENT_LIMIT = 25;
-// カスタムロールを付与するユーザー数がAzureの上限を超えていないかを検証する
 /**
  * カスタムロール割り当て数がSWAの上限を超えないことを事前にチェックする。
  * @param users GitHub権限から抽出した同期対象ユーザー。
@@ -32556,7 +32584,6 @@ function parseInvitationExpirationHours(input) {
     }
     return hours;
 }
-// GitHub Actionの入力値をまとめて取得し、デフォルト値を補完する
 /**
  * GitHub Action入力を集約し、デフォルト値や検証済みの型を付与する。
  * @returns SWA同期で利用する各種入力。
@@ -32584,7 +32611,6 @@ function getInputs() {
 {summaryMarkdown}`
     };
 }
-// yyyy-mm-ddの簡易な日付表現を作成する（discussionタイトル用）
 /**
  * Discussionタイトル向けの簡易日付（YYYY-MM-DD）を返す。
  */
@@ -32764,7 +32790,6 @@ async function writeJobSummary(summaryMarkdown) {
         .addRaw(summaryMarkdown, true)
         .write();
 }
-// GitHubとSWAの両方に対してロール同期を行い、結果をDiscussionとJobサマリーに書き出す
 /**
  * GitHubリポジトリの権限をソース・オブ・トゥルースとしてSWAロールを同期するエントリーポイント。
  * 成否にかかわらずJobサマリーへ結果を出力する。

@@ -3,16 +3,21 @@ import * as github from '@actions/github'
 import { graphql } from '@octokit/graphql'
 import type { DesiredUser } from './types.js'
 
+/** コラボレーター情報 */
 type Collaborator = {
+  /** GitHubログイン名 */
   login: string
+  /** 権限情報 */
   permissions?: {
+    /** 管理者権限 */
     admin?: boolean
+    /** メンテナンス権限 */
     maintain?: boolean
+    /** プッシュ権限 */
     push?: boolean
   }
 }
 
-// Action入力からowner/repo形式を解析し、省略時はWorkflowのコンテキストを使う
 /**
  * target-repo入力を解析し、省略時は現在のworkflowコンテキストを採用する。
  * @param input Action入力`target-repo`の文字列（owner/repo形式）。
@@ -33,7 +38,11 @@ export function parseTargetRepo(
   return { owner, repo }
 }
 
-// GitHubコラボレーターの権限からSWAに対応するロールを推定する
+/**
+ * GitHubコラボレーターの権限からSWAロールを決定する。
+ * @param collaborator コラボレーター情報。
+ * @returns 同期対象ユーザー、権限不足の場合はnull。
+ */
 function toRole(collaborator: Collaborator): DesiredUser | null {
   const { login, permissions } = collaborator
   if (permissions?.admin) {
@@ -45,12 +54,12 @@ function toRole(collaborator: Collaborator): DesiredUser | null {
   return null
 }
 
-// GitHub APIから書き込み以上の権限を持つメンバーを集め、同期対象ユーザーへ変換する
 /**
  * GitHub APIからwrite/maintain/admin権限を持つユーザーを列挙し、同期用の形へ整形する。
  * @param octokit Octokitインスタンス。
  * @param owner リポジトリ所有者。
  * @param repo リポジトリ名。
+ * @returns 同期対象ユーザー配列。
  */
 export async function listEligibleCollaborators(
   octokit: ReturnType<typeof github.getOctokit>,
@@ -74,7 +83,6 @@ export async function listEligibleCollaborators(
   return desired
 }
 
-// Discussionの作成にはカテゴリIDとリポジトリIDが必要なのでGraphQLで先に取得する
 /**
  * Discussion作成に必要なリポジトリIDとカテゴリIDをGraphQLで取得する。
  * @param token GitHubトークン。
@@ -124,7 +132,6 @@ export async function getDiscussionCategoryId(
   return { repositoryId: query.repository.id, categoryId: category.id }
 }
 
-// Discussionの作成。カテゴリIDは事前に取得しておき、ここではミューテーションのみ実行する
 /**
  * 取得済みカテゴリIDを使ってDiscussionを作成する。
  * @param token GitHubトークン。

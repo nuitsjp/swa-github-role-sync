@@ -1,10 +1,18 @@
 import type { InvitationResult, RemovalResult, UpdateResult } from './types.js'
 
+/** テンプレート置換オプション */
 type FillTemplateOptions = {
+  /** 未定義キーが見つかった際のコールバック */
   onMissingKey?: (key: string) => void
 }
 
-// Discussionのテンプレート文字列に{key}形式で値を埋め込み、未定義キーはコールバックで通知する
+/**
+ * テンプレート文字列の{key}形式プレースホルダーを値で置換する。
+ * @param template テンプレート文字列。
+ * @param values 置換値のマップ。
+ * @param options 未定義キー通知用のコールバック。
+ * @returns 置換済み文字列。
+ */
 export function fillTemplate(
   template: string,
   values: Record<string, string>,
@@ -19,18 +27,31 @@ export function fillTemplate(
   })
 }
 
+/** サマリーMarkdown生成パラメーター */
 type SummaryParams = {
+  /** リポジトリ名（owner/repo形式） */
   repo: string
+  /** Static Web App名 */
   swaName: string
+  /** 招待したユーザー */
   added: InvitationResult[]
+  /** 更新したユーザー */
   updated: UpdateResult[]
+  /** 削除したユーザー */
   removed: RemovalResult[]
+  /** Discussion URL */
   discussionUrl?: string
+  /** 同期ステータス */
   status?: 'success' | 'failure'
+  /** 失敗時のエラーメッセージ */
   failureMessage?: string
 }
 
-// Jobサマリー兼Discussion本文に貼り付けるMarkdownを合成する
+/**
+ * JobサマリーおよびDiscussion本文用のMarkdownを生成する。
+ * @param params サマリー生成に必要なパラメーター。
+ * @returns Markdown形式のサマリー文字列。
+ */
 export function buildSummaryMarkdown({
   repo,
   swaName,

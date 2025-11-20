@@ -3,10 +3,15 @@ import { promisify } from 'node:util'
 import * as core from '@actions/core'
 import type { SwaUser } from './types.js'
 
-// Jestから差し替えやすいようにexecFileをPromise化した関数を共有で持つ
+/** Promise化されたexecFile関数 */
 const execFileAsync = promisify(execFile)
 
-// Azure CLIを呼び出す共通ルーチン。stderrの情報を握り潰さないように整形する
+/**
+ * Azure CLIコマンドを実行する。
+ * @param args CLIに渡す引数配列。
+ * @returns 標準出力の文字列。
+ * @throws コマンド実行エラー（stderrを含む）。
+ */
 async function runAzCommand(args: string[]): Promise<string> {
   try {
     const { stdout } = await execFileAsync('az', args, {
@@ -24,7 +29,11 @@ async function runAzCommand(args: string[]): Promise<string> {
   }
 }
 
-// provider文字列はケースや空白が不定なのでここでそろえて比較する
+/**
+ * プロバイダー文字列を正規化する。
+ * @param provider プロバイダー名。
+ * @returns 小文字化・トリム済みのプロバイダー名。
+ */
 function normalizeProvider(provider: string | undefined): string {
   return provider ? provider.trim().toLowerCase() : ''
 }
@@ -39,7 +48,6 @@ export async function listSwaUsers(
   name: string,
   resourceGroup: string
 ): Promise<SwaUser[]> {
-  // ユーザー一覧はproviderでフィルタするため、JSON出力を取得して後段で処理する
   const stdout = await runAzCommand([
     'staticwebapp',
     'users',
@@ -52,7 +60,8 @@ export async function listSwaUsers(
     'json'
   ])
   const users = JSON.parse(stdout) as SwaUser[]
-  // GitHub経由のユーザーのみを対象にする（Azure ADなど他プロバイダーは除外）
+
+  // GitHubプロバイダーのみをフィルタリング
   const githubUsers = users.filter(
     (user): user is SwaUser => normalizeProvider(user.provider) === 'github'
   )
@@ -71,7 +80,6 @@ export async function getSwaDefaultHostname(
   name: string,
   resourceGroup: string
 ): Promise<string> {
-  // 既定ホスト名はtsv形式で1行だけ返るのでtrimして空判定する
   const stdout = await runAzCommand([
     'staticwebapp',
     'show',
@@ -109,7 +117,6 @@ export async function inviteUser(
   roles: string,
   expirationHours = 24
 ): Promise<string> {
-  // 招待APIは複数種のキーでURLを返すことがあるので既知の順で引き当てる
   const stdout = await runAzCommand([
     'staticwebapp',
     'users',
@@ -132,6 +139,8 @@ export async function inviteUser(
     'json'
   ])
   const result = JSON.parse(stdout) as Record<string, string>
+
+  // 複数の可能性があるキー名から招待URLを取得
   const url = result.inviteUrl ?? result.invitationUrl ?? result.url ?? ''
   if (!url) {
     throw new Error(`Failed to retrieve invite URL for ${githubUser}`)
@@ -152,7 +161,6 @@ export async function updateUserRoles(
   githubUser: string,
   roles: string
 ): Promise<void> {
-  // updateコマンドはinviteと違い戻り値を使わない
   await runAzCommand([
     'staticwebapp',
     'users',
@@ -181,6 +189,6 @@ export async function clearUserRoles(
   resourceGroup: string,
   githubUser: string
 ): Promise<void> {
-  // 空文字を渡すことでAzure CLI側にロール削除を指示する
+  // 空文字でロール削除を指示
   await updateUserRoles(name, resourceGroup, githubUser, '')
 }
