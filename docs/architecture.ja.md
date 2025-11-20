@@ -48,8 +48,8 @@ sequenceDiagram
     end
   end
   Main->>Templates: buildSummaryMarkdown()
-  Main->>Templates: fillTemplate() タイトル/本文
   alt 差分あり
+    Main->>Templates: fillTemplate() タイトル/本文
     Main->>GitHub: createDiscussion()
     Main->>Templates: buildSummaryMarkdown()（Discussion URL付き）
   else 差分なし
