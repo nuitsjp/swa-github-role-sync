@@ -20,15 +20,15 @@
 
 ## 日常で使うコマンド
 
-| コマンド | 用途 |
-| --- | --- |
-| `npm run format:write` | Prettierでソース・ドキュメント・workflow YAMLを整形 |
-| `npm run lint` | ESLint（TypeScript/Prettier設定）を実行 |
-| `npm test` | Jest（ESMモード）でユニットテストを実施 |
-| `npm run verify` | formatチェック+Lint+テスト+`dist`差分確認をまとめて実行 |
-| `npm run package` | Rollupで`dist/`を再生成（CIと同じビルド） |
-| `npm run bundle` | フォーマット済みの状態で`dist/`を再生成 |
-| `npm run local-action` | `.env`の入力値を使ってローカルでActionを試行 |
+| コマンド               | 用途                                                    |
+| ---------------------- | ------------------------------------------------------- |
+| `npm run format:write` | Prettierでソース・ドキュメント・workflow YAMLを整形     |
+| `npm run lint`         | ESLint（TypeScript/Prettier設定）を実行                 |
+| `npm test`             | Jest（ESMモード）でユニットテストを実施                 |
+| `npm run verify`       | formatチェック+Lint+テスト+`dist`差分確認をまとめて実行 |
+| `npm run package`      | Rollupで`dist/`を再生成（CIと同じビルド）               |
+| `npm run bundle`       | フォーマット済みの状態で`dist/`を再生成                 |
+| `npm run local-action` | `.env`の入力値を使ってローカルでActionを試行            |
 
 `dist/`はリポジトリにコミットされるため、挙動変更を伴う修正では`npm run package`または`npm run bundle`を必ず実行してください。
 

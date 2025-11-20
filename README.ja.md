@@ -98,20 +98,20 @@ jobs:
 
 ## Inputs
 
-| Name                        | Required | Default                                              | Description                                                                               |
-| --------------------------- | -------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `github-token`              | true     | –                                                    | リポジトリのコラボレーターを取得しDiscussionを作成できるトークン。                        |
-| `target-repo`               | false    | 現在の`owner/repo`                                   | コラボレーターを取得する対象リポジトリ。異なるリポジトリの権限でSWAを管理する場合に指定。 |
-| `swa-name`                  | true     | –                                                    | 対象Static Web App名。                                                                    |
-| `swa-resource-group`        | true     | –                                                    | Static Web Appが属するリソースグループ名。                                                |
-| `swa-domain`                | false    | SWA既定ホスト名                                      | 招待リンクに含めるカスタムドメイン。省略時は`az staticwebapp show`で解決。                |
-| `invitation-expiration-hours` | false    | `24`                                                 | 招待リンクの有効期限（1〜168時間）。                                                     |
-| `role-for-admin`            | false    | `github-admin`                                       | GitHub `admin`に付与するSWAロール名。                                                     |
-| `role-for-write`            | false    | `github-writer`                                      | GitHub `write`/`maintain`に付与するSWAロール名。                                          |
-| `role-prefix`               | false    | `github-`                                            | 差分対象とするSWAロールのプレフィックス。`role-for-*`で独自ロールを設定する際に指定。     |
-| `discussion-category-name`  | true     | –                                                    | 招待サマリを投稿するDiscussionカテゴリ名。                                                |
-| `discussion-title-template` | false    | `SWA access invites for {swaName} ({repo}) - {date}` | Discussionタイトルテンプレート。`{swaName}`, `{repo}`, `{date}`を差し込み可能。           |
-| `discussion-body-template`  | false    | See `action.yml`                                     | Discussion本文テンプレート。`{summaryMarkdown}`を含めると同期サマリを挿入。               |
+| Name                          | Required | Default                                              | Description                                                                               |
+| ----------------------------- | -------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `github-token`                | true     | –                                                    | リポジトリのコラボレーターを取得しDiscussionを作成できるトークン。                        |
+| `target-repo`                 | false    | 現在の`owner/repo`                                   | コラボレーターを取得する対象リポジトリ。異なるリポジトリの権限でSWAを管理する場合に指定。 |
+| `swa-name`                    | true     | –                                                    | 対象Static Web App名。                                                                    |
+| `swa-resource-group`          | true     | –                                                    | Static Web Appが属するリソースグループ名。                                                |
+| `swa-domain`                  | false    | SWA既定ホスト名                                      | 招待リンクに含めるカスタムドメイン。省略時は`az staticwebapp show`で解決。                |
+| `invitation-expiration-hours` | false    | `24`                                                 | 招待リンクの有効期限（1〜168時間）。                                                      |
+| `role-for-admin`              | false    | `github-admin`                                       | GitHub `admin`に付与するSWAロール名。                                                     |
+| `role-for-write`              | false    | `github-writer`                                      | GitHub `write`/`maintain`に付与するSWAロール名。                                          |
+| `role-prefix`                 | false    | `github-`                                            | 差分対象とするSWAロールのプレフィックス。`role-for-*`で独自ロールを設定する際に指定。     |
+| `discussion-category-name`    | true     | –                                                    | 招待サマリを投稿するDiscussionカテゴリ名。                                                |
+| `discussion-title-template`   | false    | `SWA access invites for {swaName} ({repo}) - {date}` | Discussionタイトルテンプレート。`{swaName}`, `{repo}`, `{date}`を差し込み可能。           |
+| `discussion-body-template`    | false    | See `action.yml`                                     | Discussion本文テンプレート。`{summaryMarkdown}`を含めると同期サマリを挿入。               |
 
 ## Outputs
 

@@ -4,8 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description:
-          'SemVer string (e.g. 1.2.3 or 1.2.3-beta.1). Prefix "v" is optional.'
+        description: 'SemVer string (e.g. 1.2.3 or 1.2.3-beta.1). Prefix "v" is optional.'
         required: true
   push:
     tags:

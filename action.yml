@@ -10,8 +10,7 @@ branding:
 
 inputs:
   github-token:
-    description:
-      'GitHub token with permissions to read collaborators and create
+    description: 'GitHub token with permissions to read collaborators and create
       discussions.'
     required: true
 
@@ -56,13 +55,11 @@ inputs:
     default: github-
 
   discussion-category-name:
-    description:
-      'Discussion category name where invite summary Discussion will be created.'
+    description: 'Discussion category name where invite summary Discussion will be created.'
     required: true
 
   discussion-title-template:
-    description:
-      'Template for discussion title. Placeholders: {swaName}, {repo}, {date}.'
+    description: 'Template for discussion title. Placeholders: {swaName}, {repo}, {date}.'
     required: false
     default: SWA access invites for {swaName} ({repo}) - {date}
 
