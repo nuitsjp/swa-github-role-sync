@@ -12,7 +12,10 @@
 
 A reusable JavaScript Action that synchronizes Azure Static Web Apps (SWA) user/roles with users who have `admin` / `write` permissions on the target GitHub repository, notifies them via user-specific Discussions with invitation links, and publishes summary results to the GitHub Actions Job Summary. This approach treats SWA access management as a "snapshot of GitHub repository permissions," ideal for scenarios where you want to align access control with Pull Request workflows and branch protection policies.
 
-The action also includes a `cleanup-discussions` Action that automatically deletes expired invitation Discussions, providing complete lifecycle management for invitation links.
+> **Note**
+> Operational workflows (CI, release, SWA synchronization) are now maintained in [`nuitsjp/swa-github-workflows`](https://github.com/nuitsjp/swa-github-workflows). This repository only hosts the Action code itself.
+
+The dedicated [`swa-github-discussion-cleanup`](https://github.com/nuitsjp/swa-github-discussion-cleanup) Action automatically deletes expired invitation Discussions, providing complete lifecycle management for invitation links.
 
 ## Overview
 

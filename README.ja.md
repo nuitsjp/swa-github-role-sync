@@ -16,7 +16,10 @@ ActionsのJobサマリーに掲載する再利用可能なJavaScript
 Actionです。SWAへのアクセス管理を「GitHubリポジトリ権限のスナップショット」として扱い、Pull
 Requestやブランチ保護の運用と整合させたいケースを想定しています。
 
-また、有効期限切れの招待Discussionを自動削除する `cleanup-discussions` Actionも同梱しており、招待リンクのライフサイクル管理を完結させることができます。
+> **お知らせ**
+> CI / リリース / SWA同期などの運用ワークフローは [`nuitsjp/swa-github-workflows`](https://github.com/nuitsjp/swa-github-workflows) へ移管しました。本リポジトリはAction本体のみを管理します。
+
+有効期限切れの招待Discussionを自動削除する専用Actionとして [`swa-github-discussion-cleanup`](https://github.com/nuitsjp/swa-github-discussion-cleanup) を用意しており、招待リンクのライフサイクル管理を完結させることができます。
 
 ## Overview
 
