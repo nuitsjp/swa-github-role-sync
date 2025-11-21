@@ -45,7 +45,11 @@ const parseTargetRepoMock = jest.fn((input: string) => {
 const listEligibleCollaboratorsMock = jest.fn()
 const createDiscussionMock = jest.fn()
 
-async function loadMain() {
+type LoadMainOptions = {
+  buildSummaryMarkdown?: () => string
+}
+
+async function loadMain(options: LoadMainOptions = {}) {
   jest.resetModules()
 
   summaryAddHeadingMock.mockReturnValue(summary)
@@ -66,6 +70,15 @@ async function loadMain() {
     context: { repo: { owner: 'ctx-owner', repo: 'ctx-repo' } },
     getOctokit: () => ({})
   }))
+
+  if (options.buildSummaryMarkdown) {
+    jest.unstable_mockModule('../src/templates.js', () => ({
+      buildSummaryMarkdown: options.buildSummaryMarkdown,
+      fillTemplate: (template: string, values: Record<string, string>) =>
+        template.replace(/\{(\w+)\}/g, (_, key) => values[key] ?? '')
+    }))
+  }
+
   jest.unstable_mockModule('../src/azure.js', () => ({
     listSwaUsers: listSwaUsersMock,
     getSwaDefaultHostname: getSwaDefaultHostnameMock,
@@ -612,5 +625,46 @@ describe('run', () => {
     const summaryMarkdown = summaryAddRawMock.mock.calls[0][0] as string
     expect(summaryMarkdown).toContain('Repository: unknown')
     expect(summaryMarkdown).toContain('Static Web App: unknown')
+  })
+
+  it('falls back to unknown SWA name when input is blank', async () => {
+    inputs.set('swa-name', '')
+    getInputMock.mockImplementation(
+      (name: string, options?: { required?: boolean }) => {
+        if (name === 'swa-name') {
+          return ''
+        }
+        return getInputValue(name, options)
+      }
+    )
+    getSwaDefaultHostnameMock.mockResolvedValue('swa.azurewebsites.net')
+    listEligibleCollaboratorsMock.mockRejectedValue(new Error('sync failed'))
+
+    const { run } = await loadMain()
+    await run()
+
+    expect(setFailedMock).toHaveBeenCalledWith('sync failed')
+    const summaryMarkdown = summaryAddRawMock.mock.calls[0][0] as string
+    expect(summaryMarkdown).toContain('Static Web App: unknown')
+  })
+
+  it('skips writing job summary when summary content is empty', async () => {
+    getSwaDefaultHostnameMock.mockResolvedValue('swa.azurewebsites.net')
+    listEligibleCollaboratorsMock.mockResolvedValue([
+      { login: 'alice', role: 'admin' },
+      { login: 'bob', role: 'write' }
+    ])
+    listSwaUsersMock.mockResolvedValue([
+      { userDetails: 'alice', roles: 'github-admin', provider: 'GitHub' },
+      { userDetails: 'bob', roles: 'github-writer', provider: 'GitHub' }
+    ])
+
+    const { run } = await loadMain({ buildSummaryMarkdown: () => '' })
+    await run()
+
+    expect(setFailedMock).not.toHaveBeenCalled()
+    expect(summaryAddHeadingMock).not.toHaveBeenCalled()
+    expect(summaryAddRawMock).not.toHaveBeenCalled()
+    expect(summaryWriteMock).not.toHaveBeenCalled()
   })
 })
