@@ -1,6 +1,9 @@
 name: CodeQL
 
 on:
+  push:
+    branches:
+      - chore/split-workflows
   schedule:
     - cron: '0 6 * * *'
   workflow_dispatch:
