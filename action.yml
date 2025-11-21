@@ -1,7 +1,6 @@
 name: Sync SWA roles with GitHub repo permissions
 description: >
-  Sync Azure Static Web Apps roles with users who have write/admin access to a
-  GitHub repository, and post invite links to a new Discussion.
+  swa-github-role-sync syncs Azure Static Web Apps and GitHub roles by posting invitation links to Discussions.
 author: Atsushi Nakamura
 # Add your action's branding here. This will appear on the GitHub Marketplace.
 branding:
