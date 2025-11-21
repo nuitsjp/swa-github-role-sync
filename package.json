@@ -1,7 +1,7 @@
 {
   "name": "swa-github-role-sync",
   "description": "Sync Azure Static Web Apps roles with GitHub repository permissions and publish invite links to a Discussion.",
-  "version": "0.1.0",
+  "version": "1.0.1",
   "author": "Atsushi Nakamura",
   "type": "module",
   "private": true,
