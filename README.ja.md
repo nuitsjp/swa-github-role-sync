@@ -1,5 +1,7 @@
 # swa-github-role-sync
 
+[English version / 英語版はこちら](README.md)
+
 [![CI](https://github.com/nuitsjp/swa-github-role-sync/actions/workflows/npm-ci.yml/badge.svg)](https://github.com/nuitsjp/swa-github-role-sync/actions/workflows/npm-ci.yml)
 [![Sync SWA roles](https://github.com/nuitsjp/swa-github-role-sync/actions/workflows/sync-swa-roles.yml/badge.svg)](https://github.com/nuitsjp/swa-github-role-sync/actions/workflows/sync-swa-roles.yml)
 [![Deploy site](https://github.com/nuitsjp/swa-github-role-sync/actions/workflows/deploy-site.yml/badge.svg)](https://github.com/nuitsjp/swa-github-role-sync/actions/workflows/deploy-site.yml)
@@ -181,11 +183,9 @@ npm run local-action
 
 ## Additional Documentation
 
-- ユーザー向け詳細ガイド: `docs/user-guide.ja.md`
-- 開発・テスト・リリース手順: `docs/dev-guide.ja.md`
-- アーキテクチャと設計メモ: `docs/architecture.ja.md`
-
-README英語版と各種詳細ドキュメントは日本語版レビュー完了後に追加します。
+- ユーザー向け詳細ガイド: [docs/user-guide.ja.md](docs/user-guide.ja.md) ([English](docs/user-guide.md))
+- 開発・テスト・リリース手順: [docs/dev-guide.ja.md](docs/dev-guide.ja.md) ([English](docs/dev-guide.md))
+- アーキテクチャと設計メモ: [docs/architecture.ja.md](docs/architecture.ja.md) ([English](docs/architecture.md))
 
 ## License
 

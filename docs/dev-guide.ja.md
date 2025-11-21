@@ -1,5 +1,7 @@
 # Development Guide（Japanese）
 
+[English version / 英語版](dev-guide.md)
+
 ## 目的と対象
 
 このドキュメントは`swa-github-role-sync`を開発・メンテナンスする開発者向けに、ローカル開発、テスト、リリースの進め方をまとめたものです。GitHub Actions上での利用手順は`docs/user-guide.ja.md`を参照してください。
