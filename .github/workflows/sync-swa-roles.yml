@@ -25,6 +25,7 @@ jobs:
           cleanup-mode: ${{ github.event_name == 'workflow_dispatch' && 'immediate' || 'expiration' }}
 
   sync-swa-roles:
+    needs: cleanup
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
