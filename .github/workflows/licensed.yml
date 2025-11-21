@@ -1,9 +1,6 @@
 name: Licensed
 
 on:
-  push:
-    branches:
-      - chore/split-workflows
   schedule:
     - cron: '0 15 * * 0,3'
   workflow_dispatch:

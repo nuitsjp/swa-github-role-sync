@@ -1,9 +1,6 @@
 name: Dependency Audit
 
 on:
-  push:
-    branches:
-      - chore/split-workflows
   schedule:
     - cron: '0 3 * * *'
   workflow_dispatch:
