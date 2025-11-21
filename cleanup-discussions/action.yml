@@ -14,11 +14,15 @@ inputs:
   expiration-hours:
     description: Hours after creation to consider a discussion expired.
     required: false
-    default: '24'
+    default: '168'
   discussion-title-template:
     description: Template string to match discussion titles. Should match the one used in the sync action.
     required: false
     default: 'SWA access invites for {swaName} ({repo}) - {date}'
+  cleanup-mode:
+    description: 'Cleanup mode. "expiration" (default) checks expiration time. "immediate" deletes all matching discussions immediately.'
+    required: false
+    default: 'expiration'
 runs:
   using: node20
   main: ../dist/cleanup.js

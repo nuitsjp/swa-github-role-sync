@@ -13,10 +13,11 @@ function getInputs() {
         discussionCategoryName: core.getInput('discussion-category-name', {
             required: true
         }),
-        expirationHours: parseInt(core.getInput('expiration-hours') || '24', 10),
+        expirationHours: parseInt(core.getInput('expiration-hours') || '168', 10),
         discussionTitleTemplate:
             core.getInput('discussion-title-template') ||
-            'SWA access invites for {swaName} ({repo}) - {date}'
+            'SWA access invites for {swaName} ({repo}) - {date}',
+        cleanupMode: core.getInput('cleanup-mode') || 'expiration'
     }
 }
 
@@ -144,7 +145,10 @@ export async function run(): Promise<void> {
 
         for (const discussion of discussions) {
             const createdAt = new Date(discussion.createdAt)
-            const isExpired = createdAt < expirationDate
+            const isExpired =
+                inputs.cleanupMode === 'immediate'
+                    ? true
+                    : createdAt < expirationDate
             const isMatch = titleRegex.test(discussion.title)
 
             if (isExpired && isMatch) {

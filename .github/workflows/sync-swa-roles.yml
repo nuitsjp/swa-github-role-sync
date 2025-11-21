@@ -2,6 +2,8 @@ name: Sync SWA Roles
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1'
 
 permissions:
   id-token: write
@@ -9,6 +11,19 @@ permissions:
   discussions: write
 
 jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Cleanup expired discussions
+        uses: ./cleanup-discussions
+        with:
+          github-token: ${{ github.token }}
+          discussion-category-name: 'Announcements'
+          expiration-hours: 24
+          cleanup-mode: ${{ github.event_name == 'workflow_dispatch' && 'immediate' || 'expiration' }}
+
   sync-swa-roles:
     runs-on: ubuntu-latest
     steps:

@@ -37,7 +37,7 @@ inputs:
   invitation-expiration-hours:
     description: 'Invitation link expiration in hours (1-168).'
     required: false
-    default: '24'
+    default: '168'
 
   role-for-admin:
     description: 'SWA role name assigned to GitHub admin users.'

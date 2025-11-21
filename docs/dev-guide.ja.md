@@ -38,6 +38,7 @@
 
 - `.env`にAction入力（`github-token`やSWA設定）を記載し、`npm run local-action`で本番と同じエントリーポイント（`src/main.ts`）を動かせます。Azure/GitHubへの書き込みを伴うため、検証用リソースで行ってください。
   - クリーンアップアクションを試す場合は、`local-action`スクリプトを修正して`src/cleanup-entry.ts`を指すようにするか、直接`ts-node`等で実行する必要があります（現状`local-action`はメインアクション用です）。
+  - `cleanup-mode`の動作確認は、`.env`に`INPUT_CLEANUP_MODE=immediate`などを追記して挙動が変わるか検証してください。
 - 差分やロール判定ロジックは`__tests__/`のテーブル駆動テストを参考にケースを追加すると理解しやすくなります。
 - CLIやGraphQL周りの関数はモック可能な形で切り出しているので、外部アクセスはテストで差し替えてください。
 

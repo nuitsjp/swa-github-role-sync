@@ -174,7 +174,7 @@ describe('run', () => {
       'swa.azurewebsites.net',
       'alice',
       'github-admin',
-      24
+      168
     )
     expect(updateUserRolesMock).toHaveBeenCalledWith(
       'my-swa',
@@ -273,7 +273,7 @@ describe('run', () => {
       'provided.example.net',
       'alice',
       'github-admin',
-      24
+      168
     )
     expect(updateUserRolesMock).not.toHaveBeenCalled()
     expect(clearUserRolesMock).not.toHaveBeenCalled()

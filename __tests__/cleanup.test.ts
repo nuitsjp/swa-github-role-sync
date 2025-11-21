@@ -55,7 +55,7 @@ describe('cleanup action', () => {
         inputs.set('github-token', 'fake-token')
         inputs.set('target-repo', 'owner/repo')
         inputs.set('discussion-category-name', 'Announcements')
-        inputs.set('expiration-hours', '24')
+        inputs.set('expiration-hours', '168')
         inputs.set('discussion-title-template', 'SWA access invites for {swaName} ({repo}) - {date}')
     })
 
@@ -128,5 +128,42 @@ describe('cleanup action', () => {
         await run()
 
         expect(setFailedMock).toHaveBeenCalledWith(expect.stringContaining('Category "MissingCategory" not found'))
+    })
+
+    test('should delete all discussions if cleanup-mode is immediate', async () => {
+        inputs.set('cleanup-mode', 'immediate')
+
+        graphqlMock
+            .mockResolvedValueOnce({
+                repository: {
+                    discussionCategories: {
+                        nodes: [{ id: 'cat1', name: 'Announcements' }]
+                    }
+                }
+            })
+            .mockResolvedValueOnce({
+                repository: {
+                    discussions: {
+                        nodes: [
+                            {
+                                id: 'disc1',
+                                title: 'SWA access invites for my-app (owner/repo) - 2099-01-01',
+                                createdAt: '2099-01-01T00:00:00Z', // 未来（期限切れでない）
+                                url: 'https://github.com/owner/repo/discussions/1'
+                            }
+                        ]
+                    }
+                }
+            })
+            .mockResolvedValueOnce({
+                deleteDiscussion: { clientMutationId: null }
+            })
+
+        const { run } = await loadCleanup()
+        await run()
+
+        expect(infoMock).toHaveBeenCalledWith(expect.stringContaining('Deleting expired discussion'))
+        expect(setOutputMock).toHaveBeenCalledWith('deleted-count', 1)
+        expect(graphqlMock).toHaveBeenCalledTimes(3)
     })
 })

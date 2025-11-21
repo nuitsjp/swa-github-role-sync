@@ -121,7 +121,7 @@ jobs:
 | `swa-name`                    | true     | –                                                    | 対象Static Web App名。                                                                    |
 | `swa-resource-group`          | true     | –                                                    | Static Web Appが属するリソースグループ名。                                                |
 | `swa-domain`                  | false    | SWA既定ホスト名                                      | 招待リンクに含めるカスタムドメイン。省略時は`az staticwebapp show`で解決。                |
-| `invitation-expiration-hours` | false    | `24`                                                 | 招待リンクの有効期限（1〜168時間）。                                                      |
+| `invitation-expiration-hours` | false    | `168`                                                | 招待リンクの有効期限（1〜168時間）。                                                      |
 | `role-for-admin`              | false    | `github-admin`                                       | GitHub `admin`に付与するSWAロール名。                                                     |
 | `role-for-write`              | false    | `github-writer`                                      | GitHub `write`/`maintain`に付与するSWAロール名。                                          |
 | `role-prefix`                 | false    | `github-`                                            | 差分対象とするSWAロールのプレフィックス。`role-for-*`で独自ロールを設定する際に指定。     |
@@ -136,7 +136,8 @@ jobs:
 | `github-token`             | true     | –                                                    | Discussionを削除するためのトークン。                                            |
 | `target-repo`              | false    | 現在の`owner/repo`                                   | Discussionを削除する対象リポジトリ。                                            |
 | `discussion-category-name` | true     | –                                                    | 削除対象のDiscussionが含まれるカテゴリ名。                                      |
-| `expiration-hours`         | false    | `24`                                                 | 作成からこの時間を経過したDiscussionを削除対象とする。                          |
+| `expiration-hours`         | false    | `168`                                                | 作成からこの時間を経過したDiscussionを削除対象とする。                          |
+| `cleanup-mode`             | false    | `expiration`                                         | `expiration`（デフォルト）は期限切れのみ、`immediate`は即時削除する。           |
 | `discussion-title-template`| false    | `SWA access invites for {swaName} ({repo}) - {date}` | 削除対象を特定するためのタイトルテンプレート（正規表現マッチングに使用される）。|
 ## Outputs
 

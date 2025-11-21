@@ -86,7 +86,7 @@ type SyncResults = {
 function parseInvitationExpirationHours(input: string): number {
   const trimmed = input.trim()
   if (!trimmed) {
-    return 24
+    return 168
   }
   const hours = Number(trimmed)
   if (

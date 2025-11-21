@@ -48,6 +48,7 @@ Actionを利用してアクセス権を自動同期し、招待リンクを利�
 
 | Input                               | 説明                                                                          | 推奨値                                                          |
 | ----------------------------------- | ----------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `invitation-expiration-hours`       | 招待リンクの有効期限（1〜168時間）。                                          | `168`                                                           |
 | `github-token`                      | コラボレーター取得とDiscussion作成に利用。                                    | `secrets.GITHUB_TOKEN`（デフォルト）またはリモートrepo対象のPAT |
 | `target-repo`                       | 他リポジトリの権限を同期元にする場合に指定。                                  | 省略でカレントrepoを使用                                        |
 | `swa-name` / `swa-resource-group`   | 対象SWAを特定。                                                               | Azureポータルの正確な名称                                       |
@@ -288,7 +289,10 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           discussion-category-name: Announcements
           expiration-hours: 24 # 同期Actionの有効期限設定に合わせる
+          cleanup-mode: ${{ github.event_name == 'workflow_dispatch' && 'immediate' || 'expiration' }}
 ```
+
+`cleanup-mode`を指定することで、手動実行時（`workflow_dispatch`）は即座に削除し、スケジュール実行時は期限切れのみ削除するといった使い分けが可能になります。
 
 `discussion-title-template`を変更している場合は、このActionにも同じテンプレートを指定して、削除対象を正しく特定できるようにしてください。
 
