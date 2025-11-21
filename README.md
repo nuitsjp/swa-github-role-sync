@@ -8,7 +8,7 @@
 [![Coverage](https://raw.githubusercontent.com/nuitsjp/swa-github-role-sync/main/badges/coverage.svg)](coverage/index.html)
 [![Dependabot](https://img.shields.io/badge/Dependabot-enabled-025E8C?logo=dependabot)](https://github.com/nuitsjp/swa-github-role-sync/network/updates)
 
-[å,žHoSa‰ / Japanese version](README.ja.md)
+[Japanese](README.ja.md)
 
 A reusable JavaScript Action that synchronizes Azure Static Web Apps (SWA) user/roles with users who have `admin` / `write` permissions on the target GitHub repository, notifies them via user-specific Discussions with invitation links, and publishes summary results to the GitHub Actions Job Summary. This approach treats SWA access management as a "snapshot of GitHub repository permissions," ideal for scenarios where you want to align access control with Pull Request workflows and branch protection policies.
 
@@ -26,7 +26,7 @@ This Action combines the GitHub REST/GraphQL API and Azure CLI (`az staticwebapp
 
 ## Core Features
 
-- Maps GitHub `admin` ’ SWA custom role (default `github-admin`), `write/maintain` ’ SWA custom role (default `github-writer`).
+- Maps GitHub `admin` â€™ SWA custom role (default `github-admin`), `write/maintain` â€™ SWA custom role (default `github-writer`).
 - Diff detection with existing roles prevents duplicate invitations and unintended role changes.
 - Supports Discussion title/body template customization, allowing insertion of @{login}, invite URL, date/repository name, and instructions to close the Discussion after authentication.
 - Writes results to `core.summary` regardless of success/failure, enabling immediate status visibility from workflow execution logs.
@@ -50,7 +50,7 @@ This Action combines the GitHub REST/GraphQL API and Azure CLI (`az staticwebapp
 ## Quick Start
 
 1. Enable the GitHub provider in your target SWA resource and confirm that user invitations can be executed from CLI.
-2. Enable Discussions in your GitHub repository (Settings ’ General) and prepare a category (e.g., `Announcements`) to post invitation summaries.
+2. Enable Discussions in your GitHub repository (Settings â€™ General) and prepare a category (e.g., `Announcements`) to post invitation summaries.
 3. Add the workflow below and register Azure federation credentials (Client ID, Tenant ID, Subscription ID) as repository or Organization secrets.
 
 ```yaml
