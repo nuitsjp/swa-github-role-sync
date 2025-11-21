@@ -1,5 +1,7 @@
 # Architecture（Japanese）
 
+[English version / 英語版](architecture.md)
+
 ## 全体像
 
 `swa-github-role-sync`はGitHubリポジトリの権限をAzure Static Web Appsのカスタムロールへ同期し、招待リンクをユーザーごとのDiscussionに投稿しつつ、集計サマリーをGitHub ActionsのJobサマリーへ出力するJavaScript Actionです。エントリーポイントは`src/main.ts`で、TypeScriptソースをRollupで`dist/`にバンドルしGitHub Actionsランナーで実行します。
