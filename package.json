@@ -28,15 +28,15 @@
   "scripts": {
     "bundle": "npm run format:write && npm run package",
     "check:dist": "npm run package && git diff --ignore-space-at-eol --text --exit-code dist",
-    "ci-test": "NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 npx jest",
+    "ci-test": "node --experimental-vm-modules --no-warnings ./node_modules/jest/bin/jest.js",
     "coverage": "npx make-coverage-badge --output-path ./badges/coverage.svg",
     "format:write": "npx prettier --write .",
     "format:check": "npx prettier --check .",
     "lint": "npx eslint . --config ../../role-sync.eslint.config.mjs",
     "local-action": "npx @github/local-action . src/main.ts .env",
-    "package": "npx rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript",
+    "package": "npx rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript && npx prettier --write dist/sync.js --ignore-path .prettierignore-force",
     "package:watch": "npm run package -- --watch",
-    "test": "NODE_OPTIONS=--experimental-vm-modules NODE_NO_WARNINGS=1 npx jest",
+    "test": "node --experimental-vm-modules --no-warnings ./node_modules/jest/bin/jest.js",
     "verify": "npm run format:check && npm run lint && npm run test && npm run check:dist",
     "all": "npm run format:write && npm run lint && npm run test && npm run coverage && npm run package"
   },
