@@ -1,12 +1,7 @@
 # swa-github-role-sync
 
-[![CI](https://github.com/nuitsjp/swa-github-role-sync/actions/workflows/npm-ci.yml/badge.svg)](https://github.com/nuitsjp/swa-github-role-sync/actions/workflows/npm-ci.yml)
-[![Sync SWA roles](https://github.com/nuitsjp/swa-github-role-sync/actions/workflows/sync-swa-roles.yml/badge.svg)](https://github.com/nuitsjp/swa-github-role-sync/actions/workflows/sync-swa-roles.yml)
-[![Deploy site](https://github.com/nuitsjp/swa-github-role-sync/actions/workflows/deploy-site.yml/badge.svg)](https://github.com/nuitsjp/swa-github-role-sync/actions/workflows/deploy-site.yml)
-[![Release](https://github.com/nuitsjp/swa-github-role-sync/actions/workflows/release.yml/badge.svg)](https://github.com/nuitsjp/swa-github-role-sync/actions/workflows/release.yml)
-[![npm version](https://img.shields.io/github/package-json/v/nuitsjp/swa-github-role-sync?label=npm%20version)](package.json)
-[![Coverage](https://raw.githubusercontent.com/nuitsjp/swa-github-role-sync/main/badges/coverage.svg)](coverage/index.html)
-[![Dependabot](https://img.shields.io/badge/Dependabot-enabled-025E8C?logo=dependabot)](https://github.com/nuitsjp/swa-github-role-sync/network/updates)
+[![Coverage](https://raw.githubusercontent.com/nuitsjp/swa-github-role-sync/main/badges/coverage.svg)](https://github.com/nuitsjp/swa-github-role-sync)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 [Japanese](README.ja.md)
 
