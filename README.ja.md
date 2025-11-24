@@ -17,7 +17,7 @@ Actionです。SWAへのアクセス管理を「GitHubリポジトリ権限の�
 Requestやブランチ保護の運用と整合させたいケースを想定しています。
 
 > **お知らせ**
-> CI / リリース / SWA同期などの運用ワークフローは [`nuitsjp/swa-github-workflows`](https://github.com/nuitsjp/swa-github-workflows) へ移管しました。本リポジトリはAction本体のみを管理します。
+> CI / リリース / SWA同期などの運用ワークフローは [`nuitsjp/swa-github-role-sync-ops`](https://github.com/nuitsjp/swa-github-role-sync-ops) へ移管しました。本リポジトリはAction本体のみを管理します。
 
 有効期限切れの招待Discussionを自動削除する専用Actionとして [`swa-github-discussion-cleanup`](https://github.com/nuitsjp/swa-github-discussion-cleanup)（別リポジトリーで提供）を用意しており、招待リンクのライフサイクル管理を完結させることができます。
 
