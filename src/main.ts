@@ -264,12 +264,9 @@ async function executeSyncPlan(context: SyncContext): Promise<SyncResults> {
   assertWithinSwaRoleLimit(githubUsers)
 
   const swaUsers = await listSwaUsers(context.swaName, context.swaResourceGroup)
-  const plan = computeSyncPlan(
-    githubUsers,
-    swaUsers,
-    context.roleMapping,
-    { rolePrefix: context.rolePrefix }
-  )
+  const plan = computeSyncPlan(githubUsers, swaUsers, context.roleMapping, {
+    rolePrefix: context.rolePrefix
+  })
 
   core.info(
     `Plan -> add:${plan.toAdd.length} update:${plan.toUpdate.length} remove:${plan.toRemove.length}`

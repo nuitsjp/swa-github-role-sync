@@ -44,11 +44,56 @@ describe('github helpers', () => {
   it('maps all permission levels to corresponding roles (1:1 mapping)', async () => {
     const { listEligibleCollaborators } = await loadGithub()
     const paginateMock = jest.fn().mockResolvedValue([
-      { login: 'admin-user', permissions: { admin: true, maintain: true, push: true, triage: true, pull: true } },
-      { login: 'maintain-user', permissions: { admin: false, maintain: true, push: true, triage: true, pull: true } },
-      { login: 'write-user', permissions: { admin: false, maintain: false, push: true, triage: true, pull: true } },
-      { login: 'triage-user', permissions: { admin: false, maintain: false, push: false, triage: true, pull: true } },
-      { login: 'read-user', permissions: { admin: false, maintain: false, push: false, triage: false, pull: true } }
+      {
+        login: 'admin-user',
+        permissions: {
+          admin: true,
+          maintain: true,
+          push: true,
+          triage: true,
+          pull: true
+        }
+      },
+      {
+        login: 'maintain-user',
+        permissions: {
+          admin: false,
+          maintain: true,
+          push: true,
+          triage: true,
+          pull: true
+        }
+      },
+      {
+        login: 'write-user',
+        permissions: {
+          admin: false,
+          maintain: false,
+          push: true,
+          triage: true,
+          pull: true
+        }
+      },
+      {
+        login: 'triage-user',
+        permissions: {
+          admin: false,
+          maintain: false,
+          push: false,
+          triage: true,
+          pull: true
+        }
+      },
+      {
+        login: 'read-user',
+        permissions: {
+          admin: false,
+          maintain: false,
+          push: false,
+          triage: false,
+          pull: true
+        }
+      }
     ])
     const octokit = {
       rest: { repos: { listCollaborators: jest.fn() } },
@@ -76,11 +121,56 @@ describe('github helpers', () => {
   it('filters collaborators by minimum permission level (write)', async () => {
     const { listEligibleCollaborators } = await loadGithub()
     const paginateMock = jest.fn().mockResolvedValue([
-      { login: 'admin-user', permissions: { admin: true, maintain: true, push: true, triage: true, pull: true } },
-      { login: 'maintain-user', permissions: { admin: false, maintain: true, push: true, triage: true, pull: true } },
-      { login: 'write-user', permissions: { admin: false, maintain: false, push: true, triage: true, pull: true } },
-      { login: 'triage-user', permissions: { admin: false, maintain: false, push: false, triage: true, pull: true } },
-      { login: 'read-user', permissions: { admin: false, maintain: false, push: false, triage: false, pull: true } }
+      {
+        login: 'admin-user',
+        permissions: {
+          admin: true,
+          maintain: true,
+          push: true,
+          triage: true,
+          pull: true
+        }
+      },
+      {
+        login: 'maintain-user',
+        permissions: {
+          admin: false,
+          maintain: true,
+          push: true,
+          triage: true,
+          pull: true
+        }
+      },
+      {
+        login: 'write-user',
+        permissions: {
+          admin: false,
+          maintain: false,
+          push: true,
+          triage: true,
+          pull: true
+        }
+      },
+      {
+        login: 'triage-user',
+        permissions: {
+          admin: false,
+          maintain: false,
+          push: false,
+          triage: true,
+          pull: true
+        }
+      },
+      {
+        login: 'read-user',
+        permissions: {
+          admin: false,
+          maintain: false,
+          push: false,
+          triage: false,
+          pull: true
+        }
+      }
     ])
     const octokit = {
       rest: { repos: { listCollaborators: jest.fn() } },
@@ -150,22 +240,22 @@ describe('github helpers', () => {
       'admin'
     )
 
-    expect(users).toEqual([
-      { login: 'admin-user', role: 'admin' }
-    ])
+    expect(users).toEqual([{ login: 'admin-user', role: 'admin' }])
   })
 
   // デフォルト（minimumPermission未指定）はwriteと同じ動作
   it('defaults to write minimum permission when not specified', async () => {
     const { listEligibleCollaborators } = await loadGithub()
-    const paginateMock = jest.fn().mockResolvedValue([
-      { login: 'alice', permissions: { admin: true } },
-      { login: 'bob', permissions: { push: true } },
-      { login: 'carol', permissions: { maintain: true } },
-      { login: 'dave', permissions: { pull: true } },
-      { login: 'eve', permissions: {} },
-      { login: 'frank' }
-    ])
+    const paginateMock = jest
+      .fn()
+      .mockResolvedValue([
+        { login: 'alice', permissions: { admin: true } },
+        { login: 'bob', permissions: { push: true } },
+        { login: 'carol', permissions: { maintain: true } },
+        { login: 'dave', permissions: { pull: true } },
+        { login: 'eve', permissions: {} },
+        { login: 'frank' }
+      ])
     const octokit = {
       rest: { repos: { listCollaborators: jest.fn() } },
       paginate: paginateMock
