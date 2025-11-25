@@ -1,5 +1,6 @@
 import type {
   DesiredUser,
+  GitHubRole,
   PlanAdd,
   PlanRemove,
   PlanUpdate,
@@ -9,6 +10,11 @@ import type {
 
 /** 差分判定に用いるロール名のデフォルト接頭辞 */
 export const DEFAULT_ROLE_PREFIX = 'github-'
+
+/** GitHub権限からSWAロールへのマッピング */
+export type RoleMapping = {
+  [K in GitHubRole]: string
+}
 
 /**
  * GitHubログイン名を正規化する。
@@ -52,17 +58,15 @@ function normalizeRoles(roles: string | undefined, rolePrefix: string): string {
 
 /**
  * GitHubの理想状態とSWAの現状を比較し、招待/更新/削除の差分プランを生成する。
- * @param githubUsers GitHubの書き込み以上ユーザーと役割。
+ * @param githubUsers GitHubの対象ユーザーと役割。
  * @param swaUsers SWAに登録済みのユーザー情報。
- * @param roleForAdmin GitHub admin権限に割り当てるSWAロール。
- * @param roleForWrite GitHub write/maintain権限に割り当てるSWAロール。
+ * @param roleMapping GitHub権限からSWAロールへのマッピング。
  * @param options rolePrefixで同期対象ロールの接頭辞を指定可能。
  */
 export function computeSyncPlan(
   githubUsers: DesiredUser[],
   swaUsers: SwaUser[],
-  roleForAdmin: string,
-  roleForWrite: string,
+  roleMapping: RoleMapping,
   options?: {
     rolePrefix?: string
   }
@@ -70,7 +74,7 @@ export function computeSyncPlan(
   const rolePrefix = options?.rolePrefix ?? DEFAULT_ROLE_PREFIX
   const desired = new Map<string, string>()
   githubUsers.forEach((user) => {
-    const role = user.role === 'admin' ? roleForAdmin : roleForWrite
+    const role = roleMapping[user.role]
     desired.set(normalizeLogin(user.login), role)
   })
 

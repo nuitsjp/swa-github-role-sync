@@ -35368,6 +35368,9 @@ var graphql2 = withDefaults(request, {
   url: '/graphql'
 })
 
+/** GitHub権限レベルの順序（高い方が上位） */
+const PERMISSION_LEVELS = ['admin', 'maintain', 'write', 'triage', 'read']
+
 /**
  * target-repo入力を解析し、省略時は現在のworkflowコンテキストを採用する。
  * @param input Action入力`target-repo`の文字列（owner/repo形式）。
@@ -35385,28 +35388,54 @@ function parseTargetRepo(input, contextRepo = githubExports.context.repo) {
   return { owner, repo }
 }
 /**
- * GitHubコラボレーターの権限からSWAロールを決定する。
+ * GitHubコラボレーターの権限から最も高い権限レベルを決定する。
  * @param collaborator コラボレーター情報。
- * @returns 同期対象ユーザー、権限不足の場合はnull。
+ * @returns 同期対象ユーザー（権限レベルを含む）。
  */
 function toRole(collaborator) {
   const { login, permissions } = collaborator
   if (permissions?.admin) {
     return { login, role: 'admin' }
   }
-  if (permissions?.maintain || permissions?.push) {
+  if (permissions?.maintain) {
+    return { login, role: 'maintain' }
+  }
+  if (permissions?.push) {
     return { login, role: 'write' }
+  }
+  if (permissions?.triage) {
+    return { login, role: 'triage' }
+  }
+  if (permissions?.pull) {
+    return { login, role: 'read' }
   }
   return null
 }
 /**
- * GitHub APIからwrite/maintain/admin権限を持つユーザーを列挙し、同期用の形へ整形する。
+ * 指定された最小権限レベル以上かどうかを判定する。
+ * @param role ユーザーの権限レベル。
+ * @param minimumPermission 最小権限レベル。
+ * @returns 最小権限以上ならtrue。
+ */
+function meetsMinimumPermission(role, minimumPermission) {
+  const roleIndex = PERMISSION_LEVELS.indexOf(role)
+  const minIndex = PERMISSION_LEVELS.indexOf(minimumPermission)
+  return roleIndex <= minIndex
+}
+/**
+ * GitHub APIから指定された最小権限以上のユーザーを列挙し、同期用の形へ整形する。
  * @param octokit Octokitインスタンス。
  * @param owner リポジトリ所有者。
  * @param repo リポジトリ名。
+ * @param minimumPermission 同期対象とする最小権限レベル（デフォルト: write）。
  * @returns 同期対象ユーザー配列。
  */
-async function listEligibleCollaborators(octokit, owner, repo) {
+async function listEligibleCollaborators(
+  octokit,
+  owner,
+  repo,
+  minimumPermission = 'write'
+) {
   const collaborators = await octokit.paginate(
     octokit.rest.repos.listCollaborators,
     {
@@ -35416,7 +35445,10 @@ async function listEligibleCollaborators(octokit, owner, repo) {
       affiliation: 'all'
     }
   )
-  const desired = collaborators.map(toRole).filter((user) => Boolean(user))
+  const desired = collaborators
+    .map(toRole)
+    .filter((user) => Boolean(user))
+    .filter((user) => meetsMinimumPermission(user.role, minimumPermission))
   coreExports.debug(`Eligible collaborators: ${desired.length}`)
   return desired
 }
@@ -35551,23 +35583,16 @@ function normalizeRoles(roles, rolePrefix) {
 }
 /**
  * GitHubの理想状態とSWAの現状を比較し、招待/更新/削除の差分プランを生成する。
- * @param githubUsers GitHubの書き込み以上ユーザーと役割。
+ * @param githubUsers GitHubの対象ユーザーと役割。
  * @param swaUsers SWAに登録済みのユーザー情報。
- * @param roleForAdmin GitHub admin権限に割り当てるSWAロール。
- * @param roleForWrite GitHub write/maintain権限に割り当てるSWAロール。
+ * @param roleMapping GitHub権限からSWAロールへのマッピング。
  * @param options rolePrefixで同期対象ロールの接頭辞を指定可能。
  */
-function computeSyncPlan(
-  githubUsers,
-  swaUsers,
-  roleForAdmin,
-  roleForWrite,
-  options
-) {
+function computeSyncPlan(githubUsers, swaUsers, roleMapping, options) {
   const rolePrefix = options?.rolePrefix ?? DEFAULT_ROLE_PREFIX
   const desired = new Map()
   githubUsers.forEach((user) => {
-    const role = user.role === 'admin' ? roleForAdmin : roleForWrite
+    const role = roleMapping[user.role]
     desired.set(normalizeLogin(user.login), role)
   })
   const existing = new Map()
@@ -35730,6 +35755,18 @@ function parseInvitationExpirationHours(input) {
   return hours
 }
 /**
+ * minimum-permission入力をパースし、有効な権限レベルを返す。
+ * @param input minimum-permission入力文字列。
+ * @returns 有効なGitHubRole、無効な場合はデフォルト'write'。
+ */
+function parseMinimumPermission(input) {
+  const trimmed = input.trim().toLowerCase()
+  if (PERMISSION_LEVELS.includes(trimmed)) {
+    return trimmed
+  }
+  return 'write'
+}
+/**
  * GitHub Action入力を集約し、デフォルト値や検証済みの型を付与する。
  * @returns SWA同期で利用する各種入力。
  */
@@ -35737,6 +35774,16 @@ function getInputs() {
   const invitationExpirationHours = parseInvitationExpirationHours(
     coreExports.getInput('invitation-expiration-hours')
   )
+  const minimumPermission = parseMinimumPermission(
+    coreExports.getInput('minimum-permission')
+  )
+  const roleMapping = {
+    admin: coreExports.getInput('role-for-admin') || 'github-admin',
+    maintain: coreExports.getInput('role-for-maintain') || 'github-maintain',
+    write: coreExports.getInput('role-for-write') || 'github-write',
+    triage: coreExports.getInput('role-for-triage') || 'github-triage',
+    read: coreExports.getInput('role-for-read') || 'github-read'
+  }
   return {
     githubToken: coreExports.getInput('github-token', { required: true }),
     targetRepo: coreExports.getInput('target-repo'),
@@ -35746,8 +35793,8 @@ function getInputs() {
     }),
     swaDomain: coreExports.getInput('swa-domain'),
     invitationExpirationHours,
-    roleForAdmin: coreExports.getInput('role-for-admin') || 'github-admin',
-    roleForWrite: coreExports.getInput('role-for-write') || 'github-writer',
+    minimumPermission,
+    roleMapping,
     rolePrefix: coreExports.getInput('role-prefix') || 'github-',
     discussionCategoryName: coreExports.getInput('discussion-category-name', {
       required: true
@@ -35846,20 +35893,17 @@ async function executeSyncPlan(context) {
   const githubUsers = await listEligibleCollaborators(
     context.octokit,
     context.owner,
-    context.repo
+    context.repo,
+    context.minimumPermission
   )
   coreExports.info(
-    `Found ${githubUsers.length} GitHub users with write/admin (owner/repo: ${context.repoFullName})`
+    `Found ${githubUsers.length} GitHub users with ${context.minimumPermission}+ permission (owner/repo: ${context.repoFullName})`
   )
   assertWithinSwaRoleLimit(githubUsers)
   const swaUsers = await listSwaUsers(context.swaName, context.swaResourceGroup)
-  const plan = computeSyncPlan(
-    githubUsers,
-    swaUsers,
-    context.roleForAdmin,
-    context.roleForWrite,
-    { rolePrefix: context.rolePrefix }
-  )
+  const plan = computeSyncPlan(githubUsers, swaUsers, context.roleMapping, {
+    rolePrefix: context.rolePrefix
+  })
   coreExports.info(
     `Plan -> add:${plan.toAdd.length} update:${plan.toUpdate.length} remove:${plan.toRemove.length}`
   )

@@ -105,8 +105,12 @@ function setDefaultInputs() {
   inputs.set('discussion-title-template', '')
   inputs.set('discussion-body-template', '')
   inputs.set('swa-domain', '')
+  inputs.set('minimum-permission', '')
   inputs.set('role-for-admin', 'github-admin')
-  inputs.set('role-for-write', 'github-writer')
+  inputs.set('role-for-maintain', 'github-maintain')
+  inputs.set('role-for-write', 'github-write')
+  inputs.set('role-for-triage', 'github-triage')
+  inputs.set('role-for-read', 'github-read')
   inputs.set('role-prefix', '')
   inputs.set('invitation-expiration-hours', '')
 }
@@ -155,7 +159,7 @@ describe('run', () => {
     getSwaDefaultHostnameMock.mockResolvedValue('swa.azurewebsites.net')
     listSwaUsersMock.mockResolvedValue([
       { userDetails: 'bob', roles: 'github-admin', provider: 'GitHub' },
-      { userDetails: 'carol', roles: 'github-writer', provider: 'GitHub' }
+      { userDetails: 'carol', roles: 'github-write', provider: 'GitHub' }
     ])
     listEligibleCollaboratorsMock.mockResolvedValue([
       { login: 'alice', role: 'admin' },
@@ -193,7 +197,7 @@ describe('run', () => {
       'my-swa',
       'my-rg',
       'bob',
-      'github-writer'
+      'github-write'
     )
     expect(clearUserRolesMock).toHaveBeenCalledWith('my-swa', 'my-rg', 'carol')
 
@@ -323,7 +327,10 @@ describe('run', () => {
     inputs.set('discussion-title-template', 'Custom title for {repo}')
     inputs.set('discussion-body-template', 'Body for {swaName}')
     inputs.set('role-for-admin', '')
+    inputs.set('role-for-maintain', '')
     inputs.set('role-for-write', '')
+    inputs.set('role-for-triage', '')
+    inputs.set('role-for-read', '')
 
     listEligibleCollaboratorsMock.mockResolvedValue([
       { login: 'alice', role: 'admin' }
@@ -415,6 +422,50 @@ describe('run', () => {
     )
   })
 
+  // minimum-permissionを指定して、read権限以上のユーザーを同期
+  it('uses custom minimum-permission to sync read+ users', async () => {
+    inputs.set('minimum-permission', 'read')
+    getSwaDefaultHostnameMock.mockResolvedValue('swa.azurewebsites.net')
+    listEligibleCollaboratorsMock.mockResolvedValue([
+      { login: 'alice', role: 'admin' },
+      { login: 'reader', role: 'read' }
+    ])
+    listSwaUsersMock.mockResolvedValue([])
+    inviteUserMock
+      .mockResolvedValueOnce('https://invite/alice')
+      .mockResolvedValueOnce('https://invite/reader')
+    createDiscussionMock
+      .mockResolvedValueOnce('https://github.com/owner/repo/discussions/1')
+      .mockResolvedValueOnce('https://github.com/owner/repo/discussions/2')
+
+    const { run } = await loadMain()
+    await run()
+
+    expect(listEligibleCollaboratorsMock).toHaveBeenCalledWith(
+      expect.anything(),
+      'owner',
+      'repo',
+      'read'
+    )
+    expect(inviteUserMock).toHaveBeenCalledWith(
+      'my-swa',
+      'my-rg',
+      'swa.azurewebsites.net',
+      'alice',
+      'github-admin',
+      168
+    )
+    expect(inviteUserMock).toHaveBeenCalledWith(
+      'my-swa',
+      'my-rg',
+      'swa.azurewebsites.net',
+      'reader',
+      'github-read',
+      168
+    )
+    expect(setOutputMock).toHaveBeenCalledWith('added-count', 2)
+  })
+
   // 差分が無いときにDiscussionを作成せず結果だけ出力すること
   it('skips discussion creation when no role changes are needed', async () => {
     getSwaDefaultHostnameMock.mockResolvedValue('swa.azurewebsites.net')
@@ -424,7 +475,7 @@ describe('run', () => {
     ])
     listSwaUsersMock.mockResolvedValue([
       { userDetails: 'alice', roles: 'github-admin', provider: 'GitHub' },
-      { userDetails: 'bob', roles: 'github-writer', provider: 'GitHub' }
+      { userDetails: 'bob', roles: 'github-write', provider: 'GitHub' }
     ])
 
     const { run } = await loadMain()
@@ -467,7 +518,7 @@ describe('run', () => {
       'my-swa',
       'my-rg',
       'bob',
-      'github-writer'
+      'github-write'
     )
     expect(createDiscussionMock).not.toHaveBeenCalled()
     expect(infoMock).toHaveBeenCalledWith(
@@ -745,7 +796,7 @@ describe('run', () => {
     ])
     listSwaUsersMock.mockResolvedValue([
       { userDetails: 'alice', roles: 'github-admin', provider: 'GitHub' },
-      { userDetails: 'bob', roles: 'github-writer', provider: 'GitHub' }
+      { userDetails: 'bob', roles: 'github-write', provider: 'GitHub' }
     ])
 
     const { run } = await loadMain({ buildSummaryMarkdown: () => '' })

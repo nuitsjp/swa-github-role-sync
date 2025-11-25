@@ -1,5 +1,14 @@
-/** GitHub側の権限で同期対象を仕分けるための種別 */
-export type GitHubRole = 'admin' | 'write'
+/** GitHub側の権限で同期対象を仕分けるための種別（5段階） */
+export type GitHubRole = 'admin' | 'maintain' | 'write' | 'triage' | 'read'
+
+/** GitHub権限レベルの順序（高い方が上位） */
+export const PERMISSION_LEVELS: GitHubRole[] = [
+  'admin',
+  'maintain',
+  'write',
+  'triage',
+  'read'
+]
 
 /** GitHubのコラボレーターリストから抽出した理想状態 */
 export type DesiredUser = {

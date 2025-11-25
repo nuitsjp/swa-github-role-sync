@@ -38,15 +38,35 @@ inputs:
     required: false
     default: '168'
 
+  minimum-permission:
+    description: 'Minimum GitHub permission level to sync. Options: read, triage, write, maintain, admin.'
+    required: false
+    default: write
+
   role-for-admin:
     description: 'SWA role name assigned to GitHub admin users.'
     required: false
     default: github-admin
 
-  role-for-write:
-    description: 'SWA role name assigned to GitHub write/maintain users.'
+  role-for-maintain:
+    description: 'SWA role name assigned to GitHub maintain users.'
     required: false
-    default: github-writer
+    default: github-maintain
+
+  role-for-write:
+    description: 'SWA role name assigned to GitHub write users.'
+    required: false
+    default: github-write
+
+  role-for-triage:
+    description: 'SWA role name assigned to GitHub triage users.'
+    required: false
+    default: github-triage
+
+  role-for-read:
+    description: 'SWA role name assigned to GitHub read users.'
+    required: false
+    default: github-read
 
   role-prefix:
     description: 'Prefix used to detect SWA roles managed by this action.'

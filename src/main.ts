@@ -13,14 +13,16 @@ import {
   listEligibleCollaborators,
   parseTargetRepo
 } from './github.js'
-import { computeSyncPlan } from './plan.js'
+import { computeSyncPlan, type RoleMapping } from './plan.js'
 import { buildSummaryMarkdown, fillTemplate } from './templates.js'
 import type {
   DesiredUser,
+  GitHubRole,
   InvitationResult,
   RemovalResult,
   UpdateResult
 } from './types.js'
+import { PERMISSION_LEVELS } from './types.js'
 
 /** Azure Static Web Appsのカスタムロールに割り当てられるGitHubユーザー数の上限 */
 const SWA_CUSTOM_ROLE_ASSIGNMENT_LIMIT = 25
@@ -50,8 +52,8 @@ type Inputs = {
   swaResourceGroup: string
   swaDomain?: string
   invitationExpirationHours: number
-  roleForAdmin: string
-  roleForWrite: string
+  minimumPermission: GitHubRole
+  roleMapping: RoleMapping
   rolePrefix: string
   discussionCategoryName: string
   discussionTitleTemplate: string
@@ -103,6 +105,19 @@ function parseInvitationExpirationHours(input: string): number {
 }
 
 /**
+ * minimum-permission入力をパースし、有効な権限レベルを返す。
+ * @param input minimum-permission入力文字列。
+ * @returns 有効なGitHubRole、無効な場合はデフォルト'write'。
+ */
+function parseMinimumPermission(input: string): GitHubRole {
+  const trimmed = input.trim().toLowerCase() as GitHubRole
+  if (PERMISSION_LEVELS.includes(trimmed)) {
+    return trimmed
+  }
+  return 'write'
+}
+
+/**
  * GitHub Action入力を集約し、デフォルト値や検証済みの型を付与する。
  * @returns SWA同期で利用する各種入力。
  */
@@ -110,6 +125,16 @@ function getInputs(): Inputs {
   const invitationExpirationHours = parseInvitationExpirationHours(
     core.getInput('invitation-expiration-hours')
   )
+  const minimumPermission = parseMinimumPermission(
+    core.getInput('minimum-permission')
+  )
+  const roleMapping: RoleMapping = {
+    admin: core.getInput('role-for-admin') || 'github-admin',
+    maintain: core.getInput('role-for-maintain') || 'github-maintain',
+    write: core.getInput('role-for-write') || 'github-write',
+    triage: core.getInput('role-for-triage') || 'github-triage',
+    read: core.getInput('role-for-read') || 'github-read'
+  }
   return {
     githubToken: core.getInput('github-token', { required: true }),
     targetRepo: core.getInput('target-repo'),
@@ -117,8 +142,8 @@ function getInputs(): Inputs {
     swaResourceGroup: core.getInput('swa-resource-group', { required: true }),
     swaDomain: core.getInput('swa-domain'),
     invitationExpirationHours,
-    roleForAdmin: core.getInput('role-for-admin') || 'github-admin',
-    roleForWrite: core.getInput('role-for-write') || 'github-writer',
+    minimumPermission,
+    roleMapping,
     rolePrefix: core.getInput('role-prefix') || 'github-',
     discussionCategoryName: core.getInput('discussion-category-name', {
       required: true
@@ -228,11 +253,12 @@ async function executeSyncPlan(context: SyncContext): Promise<SyncResults> {
   const githubUsers = await listEligibleCollaborators(
     context.octokit,
     context.owner,
-    context.repo
+    context.repo,
+    context.minimumPermission
   )
 
   core.info(
-    `Found ${githubUsers.length} GitHub users with write/admin (owner/repo: ${context.repoFullName})`
+    `Found ${githubUsers.length} GitHub users with ${context.minimumPermission}+ permission (owner/repo: ${context.repoFullName})`
   )
 
   assertWithinSwaRoleLimit(githubUsers)
@@ -241,8 +267,7 @@ async function executeSyncPlan(context: SyncContext): Promise<SyncResults> {
   const plan = computeSyncPlan(
     githubUsers,
     swaUsers,
-    context.roleForAdmin,
-    context.roleForWrite,
+    context.roleMapping,
     { rolePrefix: context.rolePrefix }
   )
 

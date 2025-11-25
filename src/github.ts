@@ -1,7 +1,8 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import { graphql } from '@octokit/graphql'
-import type { DesiredUser } from './types.js'
+import type { DesiredUser, GitHubRole } from './types.js'
+import { PERMISSION_LEVELS } from './types.js'
 
 /** コラボレーター情報 */
 type Collaborator = {
@@ -15,6 +16,10 @@ type Collaborator = {
     maintain?: boolean
     /** プッシュ権限 */
     push?: boolean
+    /** トリアージ権限 */
+    triage?: boolean
+    /** 読み取り権限 */
+    pull?: boolean
   }
 }
 
@@ -39,32 +44,58 @@ export function parseTargetRepo(
 }
 
 /**
- * GitHubコラボレーターの権限からSWAロールを決定する。
+ * GitHubコラボレーターの権限から最も高い権限レベルを決定する。
  * @param collaborator コラボレーター情報。
- * @returns 同期対象ユーザー、権限不足の場合はnull。
+ * @returns 同期対象ユーザー（権限レベルを含む）。
  */
 function toRole(collaborator: Collaborator): DesiredUser | null {
   const { login, permissions } = collaborator
   if (permissions?.admin) {
     return { login, role: 'admin' }
   }
-  if (permissions?.maintain || permissions?.push) {
+  if (permissions?.maintain) {
+    return { login, role: 'maintain' }
+  }
+  if (permissions?.push) {
     return { login, role: 'write' }
+  }
+  if (permissions?.triage) {
+    return { login, role: 'triage' }
+  }
+  if (permissions?.pull) {
+    return { login, role: 'read' }
   }
   return null
 }
 
 /**
- * GitHub APIからwrite/maintain/admin権限を持つユーザーを列挙し、同期用の形へ整形する。
+ * 指定された最小権限レベル以上かどうかを判定する。
+ * @param role ユーザーの権限レベル。
+ * @param minimumPermission 最小権限レベル。
+ * @returns 最小権限以上ならtrue。
+ */
+function meetsMinimumPermission(
+  role: GitHubRole,
+  minimumPermission: GitHubRole
+): boolean {
+  const roleIndex = PERMISSION_LEVELS.indexOf(role)
+  const minIndex = PERMISSION_LEVELS.indexOf(minimumPermission)
+  return roleIndex <= minIndex
+}
+
+/**
+ * GitHub APIから指定された最小権限以上のユーザーを列挙し、同期用の形へ整形する。
  * @param octokit Octokitインスタンス。
  * @param owner リポジトリ所有者。
  * @param repo リポジトリ名。
+ * @param minimumPermission 同期対象とする最小権限レベル（デフォルト: write）。
  * @returns 同期対象ユーザー配列。
  */
 export async function listEligibleCollaborators(
   octokit: ReturnType<typeof github.getOctokit>,
   owner: string,
-  repo: string
+  repo: string,
+  minimumPermission: GitHubRole = 'write'
 ): Promise<DesiredUser[]> {
   const collaborators = await octokit.paginate(
     octokit.rest.repos.listCollaborators,
@@ -78,6 +109,7 @@ export async function listEligibleCollaborators(
   const desired = collaborators
     .map(toRole)
     .filter((user): user is DesiredUser => Boolean(user))
+    .filter((user) => meetsMinimumPermission(user.role, minimumPermission))
 
   core.debug(`Eligible collaborators: ${desired.length}`)
   return desired
