@@ -1,4 +1,4 @@
-# swa-github-role-sync-ops
+# swa-github-role-sync
 
 [![NPM CI](https://github.com/nuitsjp/swa-github-role-sync-ops/actions/workflows/npm-ci.yml/badge.svg)](https://github.com/nuitsjp/swa-github-role-sync-ops/actions/workflows/npm-ci.yml)
 [![Deploy Site](https://github.com/nuitsjp/swa-github-role-sync-ops/actions/workflows/deploy-site.yml/badge.svg)](https://github.com/nuitsjp/swa-github-role-sync-ops/actions/workflows/deploy-site.yml)
